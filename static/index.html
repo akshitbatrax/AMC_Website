@@ -1,115 +1,249 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Meta -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>AMC Spark & Services — Direct Electrical Projects</title>
-  <meta name="description" content="Direct electrical projects, EPC, testing & commissioning, retrofits, AMC, and OEM/MRO supply for heavy-load sites (11–66 kV)."/>
-  <link rel="canonical" href="https://www.amcspark.com/"/>
-  <link rel="icon" href="/favicon.ico"/>
+  <title>AMC Spark & Services — Electrical Projects • EPC • T&C • Retrofits • AMC (11–66 kV)</title>
+  <meta name="description" content="Direct electrical projects, EPC, testing & commissioning, retrofits, AMC, and OEM/MRO supply for heavy‑load sites. Quote in 24 hours." />
+  <link rel="icon" href="/favicon.ico" />
+  <meta name="theme-color" content="#0a0f1f" />
+  
+  <!-- Fonts (optional; remove if hosting locally) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <!-- External CSS -->
-  <link rel="stylesheet" href="/static/assets/app.css" />
+  <style>
+  /* =========================================================
+     AMC Spark — SINGLE FILE (HTML+CSS+JS)
+     Design goals: "sexy" premium, mobile‑first, crisp contrast, soft glows
+     ========================================================= */
+
+  /* ---------- Tokens ---------- */
+  :root{
+    --bg:#0a0f1f; --bg-2:#0c142b; --surface:#0b1328; --panel:#0d1737; --card:#0e1839; --border:#1b2a55;
+    --fg:#eef4ff; --muted:#a6b4c8; --muted-2:#8fa4bf;
+    --brand:#11b5ff; --brand-2:#22c55e; --accent:#8b5cf6; --amber:#ffd36a;
+    --ring:0 0 0 2px rgba(17,181,255,.35); --shadow:0 28px 72px rgba(0,0,0,.55);
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f6f9ff; --bg-2:#ffffff; --surface:#ffffff; --panel:#ffffff; --card:#ffffff; --border:#e6ecf6; --fg:#0b1020; --muted:#3a4a65; --muted-2:#4f6078; --shadow:0 18px 50px rgba(2,6,23,.08)}
+  }
+
+  /* ---------- Base ---------- */
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; color:var(--fg);
+    background:radial-gradient(1200px 380px at 10% -10%, rgba(17,181,255,.12), transparent 60%),
+               radial-gradient(900px 320px at 90% -12%, rgba(34,197,94,.10), transparent 60%),
+               linear-gradient(180deg,var(--bg),var(--bg-2) 55%);
+    font-family:Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.45;
+  }
+  a{color:inherit; text-decoration:none}
+  a:hover{text-decoration:underline}
+  img{max-width:100%; height:auto; display:block}
+  .wrap{max-width:1140px; margin-inline:auto; padding-inline:16px}
+
+  /* ---------- Utilities ---------- */
+  .btn{display:inline-flex; align-items:center; gap:.6rem; padding:.9rem 1.1rem; border:1px solid var(--border); border-radius:16px; text-decoration:none; color:var(--fg); position:relative; isolation:isolate; transition:transform .12s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{border:0; color:#041018; font-weight:900; background:linear-gradient(90deg,var(--brand),var(--brand-2)); box-shadow:0 14px 28px rgba(17,181,255,.20)}
+  .btn.primary::after{content:""; position:absolute; inset:-2px; border-radius:18px; background:linear-gradient(90deg,var(--brand),var(--accent)); filter:blur(18px); opacity:.32; z-index:-1}
+  .btn.ghost{background:rgba(255,255,255,.04)}
+  .btn.link{border:0; padding:0; text-decoration:underline; background:transparent}
+  .pill{display:inline-flex; gap:.45rem; align-items:center; font-size:.86rem; padding:.42rem .66rem; border:1px solid var(--border); border-radius:999px; color:#a7ffcf; background:rgba(34,197,94,.08)}
+  .muted{color:var(--muted)}
+  .visually-hidden{position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+
+  /* ---------- Topbar ---------- */
+  .topbar{font-size:.95rem; background:rgba(12,20,38,.75); border-bottom:1px solid var(--border); backdrop-filter:blur(6px)}
+  .topbar-inner{display:flex; gap:12px; align-items:center; justify-content:space-between; padding:.6rem 0; flex-wrap:wrap}
+
+  /* ---------- Header / Drawer Nav ---------- */
+  header{position:sticky; top:0; z-index:70; background:rgba(7,11,23,.7); border-bottom:1px solid var(--border); backdrop-filter:blur(10px)}
+  .nav{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-block:10px}
+  .logo{display:flex; align-items:center; gap:.65rem; font-weight:900; letter-spacing:.2px; white-space:nowrap}
+  .brand-sub{background:linear-gradient(90deg,var(--brand),var(--brand-2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+
+  .mobile-toggle{display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--fg)}
+  .navlinks{position:fixed; inset:auto 0 0 0; translate:0 110%; transition:translate .26s ease; background:var(--panel); border-top:1px solid var(--border); padding:14px 16px; display:grid; gap:10px; z-index:65}
+  .navlinks a,.navlinks button{padding:1rem 1rem; border-radius:12px; border:1px solid var(--border); background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
+  .navlinks.open{translate:0 0}
+  @media (min-width: 900px){ .mobile-toggle{display:none} .navlinks{position:static; translate:none; background:transparent; border:0; padding:0; display:flex; gap:1rem} .navlinks a,.navlinks button{border:0; background:transparent; padding:.45rem .55rem} }
+
+  /* ---------- Hero ---------- */
+  .hero{display:grid; gap:16px; padding:28px 0 40px; position:relative}
+  .hero h1{font-size:clamp(1.55rem,2.8vw+1rem,3.3rem); line-height:1.12; margin:0}
+  .lead{color:var(--muted)}
+  .cta{display:flex; flex-wrap:wrap; gap:.8rem}
+  .hero-media{border-radius:18px; border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden}
+  .hero-media img{display:block}
+  
+  /* Glow orbs */
+  .orb{position:absolute; filter:blur(26px); opacity:.45; border-radius:50%}
+  .orb.one{width:220px; height:220px; background:radial-gradient(circle, rgba(17,181,255,.35), transparent 60%); top:-40px; left:-20px}
+  .orb.two{width:260px; height:260px; background:radial-gradient(circle, rgba(139,92,246,.28), transparent 60%); top:-60px; right:-10px}
+
+  /* ---------- Trust rail ---------- */
+  .trust{padding:14px 0; border-block:1px solid var(--border); background:var(--surface)}
+  .logo-rail{display:flex; gap:24px; overflow:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding-bottom:6px; mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .logo-rail img{height:30px; opacity:.9; filter:grayscale(1); scroll-snap-align:center}
+
+  /* ---------- Sections ---------- */
+  .section{padding:36px 0}
+  .cards{display:grid; gap:12px; list-style:none; padding:0; margin:0}
+  .cards.two{grid-template-columns:1fr}
+  .cards.three{grid-template-columns:1fr}
+  .cards.four{grid-template-columns:1fr}
+  @media (min-width:680px){ .cards.two{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (min-width:900px){ .cards.three{grid-template-columns:repeat(3,minmax(0,1fr))} .cards.four{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+  .card{position:relative; padding:16px; border-radius:16px; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)); border:1px solid var(--border); overflow:hidden}
+  .card::before{content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1px; background:linear-gradient(120deg, rgba(17,181,255,.5), rgba(139,92,246,.3), rgba(34,197,94,.4)); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:.25}
+
+  /* ---------- Stats ---------- */
+  .stats-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; list-style:none; padding:0; margin:0}
+  .stats-list li{padding:16px; border:1px solid var(--border); border-radius:14px; text-align:center; background:var(--surface)}
+  .stats-list b{display:block; font-size:1.5rem}
+  .stats-list span{color:var(--muted)}
+  @media (min-width:720px){ .stats-list{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+  /* ---------- Gallery ---------- */
+  .gallery{display:grid; gap:10px; grid-auto-flow:column; grid-auto-columns:88%; overflow:auto; scroll-snap-type:x mandatory; padding-bottom:6px}
+  .gitem{border:1px solid var(--border); border-radius:16px; overflow:hidden; background:var(--surface); scroll-snap-align:center}
+  .gitem figcaption{padding:10px; color:#b7c2d6}
+  @media (min-width:900px){ .gallery{grid-auto-flow:unset; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible} }
+
+  /* ---------- Forms ---------- */
+  .form-tabs{display:flex; gap:8px; overflow:auto; padding-bottom:6px}
+  .form-tabs .tab{white-space:nowrap; border:1px solid var(--border); background:rgba(255,255,255,.04); padding:.7rem 1rem; border-radius:12px; color:var(--fg)}
+  .form-tabs .tab.is-active{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03))}
+  .tabpanes .pane{display:none}
+  .tabpanes .pane.is-active{display:block}
+
+  .form-grid{display:grid; gap:12px; max-width:760px}
+  .form-grid label{display:grid; gap:6px}
+  .form-grid input,.form-grid select,.form-grid textarea{width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--fg); outline:none}
+  .form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus{box-shadow:var(--ring)}
+  .form-grid .actions{display:flex; align-items:center; gap:10px}
+  .status{color:var(--muted)}
+
+  /* ---------- Footer ---------- */
+  footer{border-top:1px solid var(--border); padding-top:22px; padding-bottom:26px}
+  .grid4{display:grid; gap:14px; grid-template-columns:1fr}
+  @media (min-width:860px){ .grid4{grid-template-columns:repeat(4,minmax(0,1fr))} }
+  footer .links{list-style:none; padding:0; margin:0}
+  footer .links li{margin:.3rem 0}
+  footer .copyright{margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:#97a4b8; flex-wrap:wrap}
+
+  /* ---------- Back to top ---------- */
+  #backTop{position:fixed; right:18px; bottom:76px; display:none; padding:.65rem .8rem; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.04); text-decoration:none; color:var(--fg); z-index:68}
+
+  /* ---------- Motion ---------- */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important; scroll-behavior:auto} }
+  </style>
 </head>
 <body>
+  <div class="orb one" aria-hidden="true"></div>
+  <div class="orb two" aria-hidden="true"></div>
+
   <!-- Topbar -->
-  <section id="topbar" aria-label="Announcement">
-    <div class="wrap">
-      <p>🔧 Project Desk: <strong>Quote in 24 hours</strong> • 📑 <strong>Tenders welcomed</strong> (GeM & eProcure)</p>
-      <p>📞 <a href="tel:+919220533011">+91 9220533011</a> • ✉️ <a href="mailto:info@amcspark.com">info@amcspark.com</a></p>
+  <div class="topbar" role="region" aria-label="Announcement">
+    <div class="wrap topbar-inner">
+      <div>🔧 Project Desk: <strong>Quote in 24 hours</strong> • 📑 <strong>Tenders welcomed</strong> (GeM & eProcure)</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <a class="btn ghost" href="tel:+919220533011">📞 +91 9220533011</a>
+        <a class="btn ghost" href="mailto:info@amcspark.com">✉️ info@amcspark.com</a>
+      </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Header / Nav -->
-  <header id="site-header" role="banner">
-    <div class="wrap header-inner">
-      <a class="logo" href="#home">AMC <span class="brand-sub">Spark</span> & Services</a>
-
-      <button id="nav-toggle" class="mobile-toggle" type="button"
-              aria-label="Toggle menu" aria-controls="site-nav" aria-expanded="false">☰</button>
-
-      <nav id="site-nav" class="navlinks" aria-label="Primary">
+  <!-- Header -->
+  <header role="banner">
+    <div class="wrap nav">
+      <a class="logo" href="#home" aria-label="AMC Spark & Services Home">⚡ AMC <span class="brand-sub">Spark</span> & Services</a>
+      <button id="navToggle" class="mobile-toggle" aria-label="Open Menu" type="button">☰</button>
+      <nav id="navlinks" class="navlinks" aria-label="Primary">
         <a href="#services">Services</a>
         <a href="#supply">Supply</a>
         <a href="#projects">Projects</a>
         <a href="#forms">Forms</a>
         <a href="#downloads">Downloads</a>
         <a href="#contact">Contact</a>
-        <a href="/admin" id="nav-admin">Admin</a>
-        <button id="theme-toggle" type="button" class="ghost">Theme</button>
+        <a href="/admin">🔐 Admin</a>
+        <button id="themeBtn" class="btn ghost" type="button" aria-label="Toggle theme">🌓 Theme</button>
       </nav>
     </div>
   </header>
 
-  <!-- Hero -->
-  <main id="home" class="wrap" role="main">
-    <section id="hero" aria-labelledby="hero-title">
+  <!-- Main -->
+  <main id="home" class="wrap">
+    <section class="section hero" aria-labelledby="hero-title">
       <span class="pill">Direct Projects • Retrofits • AMC • OEM/MRO Supply</span>
-      <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy-Load Sites</h1>
+      <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy‑Load Sites ⚡</h1>
       <p class="lead">EPC, Testing & Commissioning, Retrofits, AMC — <strong>11–66 kV</strong> substations, HT panels, bus ducts, protection & relays, earthing and lightning protection.</p>
-      <p class="cta">
-        <a class="btn primary" href="#forms">Get a Quote</a>
-        <a class="btn ghost" href="#projects">View Projects</a>
-        <a class="btn link" href="#downloads">Download Profile</a>
-      </p>
-      <figure class="hero-media">
-        <img src="/Power_Grid_Jamsedpur.jpg" alt="Power Grid substation — Jamshedpur, India" width="1200" height="420" />
-        <figcaption class="visually-hidden">Representative substation image</figcaption>
-      </figure>
+      <div class="cta">
+        <a class="btn primary" href="#forms">🚀 Get a Quote</a>
+        <a class="btn ghost" href="#projects">🧷 View Projects</a>
+        <a class="btn link" href="#downloads">📄 Download Profile</a>
+      </div>
+      <figure class="hero-media"><img src="/Power_Grid_Jamsedpur.jpg" alt="Power Grid substation — Jamshedpur, India" width="1200" height="420" /></figure>
     </section>
+  </main>
 
-    <!-- Clients -->
-    <section id="trust" aria-labelledby="trust-title">
-      <h2 id="trust-title" class="visually-hidden">Trusted by</h2>
-      <ul class="logo-rail" aria-label="Client logos">
-        <li><img src="/static/assets/clients/adani.svg" alt="Adani" /></li>
-        <li><img src="/static/assets/clients/pgcil.svg" alt="PGCIL" /></li>
-        <li><img src="/static/assets/clients/railways.svg" alt="Indian Railways" /></li>
-        <li><img src="/static/assets/clients/airport.svg" alt="Airports" /></li>
-        <li><img src="/static/assets/clients/datacenter.svg" alt="Data Center" /></li>
-      </ul>
-    </section>
+  <!-- Trust -->
+  <section class="trust" aria-label="Trusted by">
+    <div class="wrap logo-rail" role="marquee" aria-roledescription="carousel">
+      <img src="/static/assets/clients/adani.svg" alt="Adani">
+      <img src="/static/assets/clients/pgcil.svg" alt="PGCIL">
+      <img src="/static/assets/clients/railways.svg" alt="Indian Railways">
+      <img src="/static/assets/clients/airport.svg" alt="Airports">
+      <img src="/static/assets/clients/datacenter.svg" alt="Data Center">
+    </div>
+  </section>
 
+  <main>
     <!-- Stats -->
-    <section id="stats" aria-labelledby="stats-title">
-      <h2 id="stats-title">Why teams pick us</h2>
+    <section class="section wrap" aria-labelledby="stats-title">
+      <h2 id="stats-title">Why teams pick us 🧠</h2>
       <ul class="stats-list">
-        <li><b>24h</b><span>Quote turnaround</span></li>
-        <li><b>CEIG</b><span>Approval coordination</span></li>
-        <li><b>24×7</b><span>AMC support</span></li>
-        <li><b>Pan-India</b><span>Execution network</span></li>
+        <li>⚡ <b>24h</b><span>Quote turnaround</span></li>
+        <li>🛡️ <b>CEIG</b><span>Approval coordination</span></li>
+        <li>🕒 <b>24×7</b><span>AMC support</span></li>
+        <li>🗺️ <b>Pan‑India</b><span>Execution network</span></li>
       </ul>
     </section>
 
     <!-- Services -->
-    <section id="services" aria-labelledby="services-title">
-      <h2 id="services-title">Services</h2>
+    <section id="services" class="section wrap" aria-labelledby="services-title">
+      <h2 id="services-title">Services 💼</h2>
       <ul class="cards three">
-        <li class="card"><h3>Design & Studies</h3><p>SLD, load list, short-circuit, relay coordination, earthing grid, lightning layout.</p></li>
-        <li class="card"><h3>Build & Install</h3><p>HT panels, transformers, bus ducts, cabling, terminations, SCADA & time-sync.</p></li>
-        <li class="card"><h3>T&amp;C & Handover</h3><p>Method statements, ITPs, FAT/SAT, as-builts, O&amp;M, CEIG coordination.</p></li>
+        <li class="card"><h3>Design & Studies</h3><p class="muted">SLD, load list, short‑circuit, relay coordination, earthing grid, lightning layout.</p></li>
+        <li class="card"><h3>Build & Install</h3><p class="muted">HT panels, transformers, bus ducts, cabling, terminations, SCADA & time‑sync.</p></li>
+        <li class="card"><h3>T&amp;C & Handover</h3><p class="muted">Method statements, ITPs, FAT/SAT, as‑builts, O&amp;M, CEIG coordination.</p></li>
       </ul>
-      <ul class="cards two">
-        <li class="card"><h3>Testing & Commissioning</h3><p>Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p></li>
-        <li class="card"><h3>Retrofits & AMC</h3><p>Relay upgrades, breaker retrofits, planned maintenance, 24×7 support, MTBF/MTTR dashboards.</p></li>
+      <ul class="cards two" style="margin-top:12px">
+        <li class="card"><h3>Testing & Commissioning</h3><p class="muted">Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p></li>
+        <li class="card"><h3>Retrofits & AMC</h3><p class="muted">Relay upgrades, breaker retrofits, planned maintenance, 24×7 support, MTBF/MTTR dashboards.</p></li>
       </ul>
     </section>
 
     <!-- Supply -->
-    <section id="supply" aria-labelledby="supply-title">
-      <h2 id="supply-title">OEM / MRO Supply</h2>
+    <section id="supply" class="section wrap" aria-labelledby="supply-title">
+      <h2 id="supply-title">OEM / MRO Supply 📦</h2>
       <ul class="cards four">
-        <li class="card"><h3>HT Panels & Relays</h3><p>VCB/SFU, protection relays, upgrades & commissioning support.</p></li>
-        <li class="card"><h3>Transformers & CT/PT</h3><p>Oil/Dry types, NGR, AVR, accessories and testing.</p></li>
-        <li class="card"><h3>Bus Ducts & Cables</h3><p>Rising mains, HT/LT cabling, routing, joints, test kits.</p></li>
-        <li class="card"><h3>Earthing & Lightning</h3><p>Chemical/CI electrodes, ESE/SPD, exothermic welding kits.</p></li>
+        <li class="card"><h3>HT Panels & Relays</h3><p class="muted">VCB/SFU, protection relays, upgrades & commissioning support.</p></li>
+        <li class="card"><h3>Transformers & CT/PT</h3><p class="muted">Oil/Dry types, NGR, AVR, accessories and testing.</p></li>
+        <li class="card"><h3>Bus Ducts & Cables</h3><p class="muted">Rising mains, HT/LT cabling, routing, joints, test kits.</p></li>
+        <li class="card"><h3>Earthing & Lightning</h3><p class="muted">Chemical/CI electrodes, ESE/SPD, exothermic welding kits.</p></li>
       </ul>
     </section>
 
-    <!-- Projects -->
-    <section id="projects" aria-labelledby="projects-title">
-      <h2 id="projects-title">Featured Projects</h2>
+    <!-- Projects gallery -->
+    <section id="projects" class="section wrap" aria-labelledby="projects-title">
+      <h2 id="projects-title">Featured Projects 📸</h2>
       <div class="gallery" aria-live="polite">
         <figure class="gitem"><img src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" alt="220 kV AIS substation, Andhra Pradesh" width="1280" height="720"><figcaption>220 kV AIS Substation — Andhra Pradesh</figcaption></figure>
         <figure class="gitem"><img src="/Traction_Substation_at_Simhachalam_01.jpg" alt="Traction substation, Vizag" width="1280" height="720"><figcaption>Traction Substation — Railways (Vizag)</figcaption></figure>
@@ -118,38 +252,34 @@
     </section>
 
     <!-- Downloads -->
-    <section id="downloads" aria-labelledby="downloads-title">
-      <h2 id="downloads-title">Capabilities & Documentation</h2>
+    <section id="downloads" class="section wrap" aria-labelledby="downloads-title">
+      <h2 id="downloads-title">Capabilities & Documentation 📚</h2>
       <ul class="cards three">
-        <li class="card"><h3>Technical</h3><p>HT panels, transformers, CT/PT, AVR, bus ducts, cabling, protection & relays, SCADA, SOE, time sync.</p></li>
-        <li class="card"><h3>Quality & Safety</h3><p>Method statements, ITPs, FAT/SAT, NABL traceability, LOTO, PTW, PPE, toolbox talks.</p></li>
+        <li class="card"><h3>Technical</h3><p class="muted">HT panels, transformers, CT/PT, AVR, bus ducts, cabling, protection & relays, SCADA, SOE, time sync.</p></li>
+        <li class="card"><h3>Quality & Safety</h3><p class="muted">Method statements, ITPs, FAT/SAT, NABL traceability, LOTO, PTW, PPE, toolbox talks.</p></li>
         <li class="card"><h3>Downloads</h3>
-          <p><a href="/static/amc-profile.pdf">Company Profile (PDF)</a><br>
-             <a href="/static/amc-capability.pdf">Capability Statement (PDF)</a><br>
-             <a href="/static/amc-hse.pdf">HSE Policy (PDF)</a></p>
+          <p><a class="btn link" href="/static/amc-profile.pdf">Company Profile (PDF)</a><br>
+             <a class="btn link" href="/static/amc-capability.pdf">Capability Statement (PDF)</a><br>
+             <a class="btn link" href="/static/amc-hse.pdf">HSE Policy (PDF)</a></p>
         </li>
       </ul>
     </section>
 
     <!-- Forms -->
-    <section id="forms" aria-labelledby="forms-title">
-      <h2 id="forms-title">Get in Touch / Request a Quote</h2>
-
-      <!-- Tabs (handled by app.js) -->
+    <section id="forms" class="section wrap" aria-labelledby="forms-title">
+      <h2 id="forms-title">Get in Touch / Request a Quote 📮</h2>
       <div class="form-tabs" role="tablist" aria-label="Form chooser">
         <button class="tab is-active" role="tab" aria-selected="true" aria-controls="pane-qq" data-target="#pane-qq" type="button">Quick Quote</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="pane-contact" data-target="#pane-contact" type="button">Contact</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="pane-project" data-target="#pane-project" type="button">Project Desk</button>
       </div>
-
       <div class="tabpanes">
-        <!-- Quick Quote -->
         <section id="pane-qq" class="pane is-active" role="tabpanel">
           <form id="qqForm" class="form-grid" action="/api/quote" method="post" novalidate>
-            <label> Name* <input name="name" required autocomplete="name" /></label>
-            <label> Work Email* <input name="email" type="email" required autocomplete="email" /></label>
-            <label> Phone* <input name="phone" type="tel" required autocomplete="tel" /></label>
-            <label> Type*
+            <label>Name* <input name="name" required autocomplete="name" /></label>
+            <label>Work Email* <input name="email" type="email" required autocomplete="email" /></label>
+            <label>Phone* <input name="phone" type="tel" required autocomplete="tel" /></label>
+            <label>Type*
               <select name="ptype" required>
                 <option value="">Select</option>
                 <option>EPC (New)</option>
@@ -159,38 +289,30 @@
                 <option>Supply Only (OEM/MRO)</option>
               </select>
             </label>
-            <label> Expected Start <input name="when" placeholder="e.g., 6 weeks" /></label>
-            <label> Notes <textarea name="notes" rows="4" placeholder="Brief scope or constraints"></textarea></label>
-            <div class="actions">
-              <button class="btn primary" type="submit">Send</button>
-              <span id="qqStatus" class="status" aria-live="polite"></span>
-            </div>
+            <label>Expected Start <input name="when" placeholder="e.g., 6 weeks" /></label>
+            <label>Notes <textarea name="notes" rows="4" placeholder="Brief scope or constraints"></textarea></label>
+            <div class="actions"><button class="btn primary" type="submit">Send</button> <span id="qqStatus" class="status" aria-live="polite"></span></div>
           </form>
         </section>
 
-        <!-- Contact -->
         <section id="pane-contact" class="pane" role="tabpanel">
           <form id="contactForm" class="form-grid" action="/api/contact" method="post" novalidate>
-            <label> Name* <input name="name" required autocomplete="name" /></label>
-            <label> Email* <input name="email" type="email" required autocomplete="email" /></label>
-            <label> Message* <textarea name="message" rows="5" required></textarea></label>
-            <div class="actions">
-              <button class="btn primary" type="submit">Send</button>
-              <span id="contactStatus" class="status" aria-live="polite"></span>
-            </div>
-            <p class="help">We usually reply within 24 hours. For tenders, attach docs in the Project Desk tab.</p>
+            <label>Name* <input name="name" required autocomplete="name" /></label>
+            <label>Email* <input name="email" type="email" required autocomplete="email" /></label>
+            <label>Message* <textarea name="message" rows="5" required></textarea></label>
+            <div class="actions"><button class="btn primary" type="submit">Send</button> <span id="contactStatus" class="status" aria-live="polite"></span></div>
+            <p class="muted">We usually reply within 24 hours. For tenders, attach docs in the Project Desk tab.</p>
           </form>
         </section>
 
-        <!-- Project Desk -->
         <section id="pane-project" class="pane" role="tabpanel">
           <form id="projForm" class="form-grid" action="/api/project" method="post" enctype="multipart/form-data" novalidate>
-            <label> Organisation / Dept* <input name="org" required autocomplete="organization" /></label>
-            <label> Contact Name* <input name="name" required autocomplete="name" /></label>
-            <label> Work Email* <input name="email" type="email" required autocomplete="email" /></label>
-            <label> Phone* <input name="phone" type="tel" required autocomplete="tel" /></label>
-            <label> Site Location* <input name="location" required /></label>
-            <label> Project Type*
+            <label>Organisation / Dept* <input name="org" required autocomplete="organization" /></label>
+            <label>Contact Name* <input name="name" required autocomplete="name" /></label>
+            <label>Work Email* <input name="email" type="email" required autocomplete="email" /></label>
+            <label>Phone* <input name="phone" type="tel" required autocomplete="tel" /></label>
+            <label>Site Location* <input name="location" required /></label>
+            <label>Project Type*
               <select name="ptype" required>
                 <option value="">Select</option>
                 <option>EPC (New)</option>
@@ -200,14 +322,14 @@
                 <option>Supply Only (OEM/MRO)</option>
               </select>
             </label>
-            <label> Procurement Mode
+            <label>Procurement Mode
               <select name="mode">
                 <option>Direct Purchase</option>
                 <option>Rate Contract</option>
                 <option>Tender / RFP (GeM/eProcure)</option>
               </select>
             </label>
-            <label> Load / Voltage Class
+            <label>Load / Voltage Class
               <select name="voltage">
                 <option value="">Select</option>
                 <option>11 kV</option>
@@ -217,75 +339,89 @@
                 <option>LV</option>
               </select>
             </label>
-            <label> Expected PO / Start <input name="podate" placeholder="e.g., 6 weeks / by Oct 2025" /></label>
-            <label> Upload SOW/SLD/BOQ <input name="files" type="file" multiple accept=".pdf,.doc,.docx,.zip" /></label>
-            <label> Notes / Scope Summary <textarea name="notes" rows="4" placeholder="Brief scope, constraints, preferred OEMs, timelines…"></textarea></label>
-            <div class="actions">
-              <button class="btn primary" type="submit">Request Quote</button>
-              <span id="projStatus" class="status" aria-live="polite"></span>
-            </div>
+            <label>Expected PO / Start <input name="podate" placeholder="e.g., 6 weeks / by Oct 2025" /></label>
+            <label>Upload SOW/SLD/BOQ <input name="files" type="file" multiple accept=".pdf,.doc,.docx,.zip" /></label>
+            <label>Notes / Scope Summary <textarea name="notes" rows="4" placeholder="Brief scope, constraints, preferred OEMs, timelines…"></textarea></label>
+            <div class="actions"><button class="btn primary" type="submit">Request Quote</button> <span id="projStatus" class="status" aria-live="polite"></span></div>
           </form>
         </section>
       </div>
     </section>
 
     <!-- Contact -->
-    <section id="contact" aria-labelledby="contact-title">
-      <h2 id="contact-title">Reach Us</h2>
+    <section id="contact" class="section wrap" aria-labelledby="contact-title">
+      <h2 id="contact-title">Reach Us 📍</h2>
       <div class="cards two">
         <article class="card">
           <h3>AMC Spark & Services</h3>
-          <address>
-            C-7, GF, RPS Palms, Sector 88, Faridabad, Haryana 121002<br />
-            📞 <a href="tel:+919220533011">+91 9220533011</a> • ✉️ <a href="mailto:info@amcspark.com">info@amcspark.com</a>
-          </address>
+          <address class="muted">C-7, GF, RPS Palms, Sector 88, Faridabad, Haryana 121002<br />📞 <a href="tel:+919220533011">+91 9220533011</a> • ✉️ <a href="mailto:info@amcspark.com">info@amcspark.com</a></address>
           <div class="mapbox">
-            <iframe title="AMC Spark & Services — Map"
-                    src="https://www.google.com/maps?q=C-7,+GF,+RPS+Palms,+Sector+88,+Faridabad,+Haryana+121002&output=embed"
-                    width="100%" height="220" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
+            <iframe title="AMC Spark & Services — Map" src="https://www.google.com/maps?q=C-7,+GF,+RPS+Palms,+Sector+88,+Faridabad,+Haryana+121002&output=embed" width="100%" height="220" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
           </div>
         </article>
         <article class="card">
           <h3>Shortcuts</h3>
           <ul class="links">
-            <li><a href="#forms">Forms</a></li>
-            <li><a href="#projects">Projects</a></li>
-            <li><a href="#downloads">Downloads</a></li>
-            <li><a href="#careers">Careers</a></li>
+            <li><a class="btn link" href="#forms">Forms</a></li>
+            <li><a class="btn link" href="#projects">Projects</a></li>
+            <li><a class="btn link" href="#downloads">Downloads</a></li>
+            <li><a class="btn link" href="#careers">Careers</a></li>
           </ul>
         </article>
       </div>
     </section>
 
-    <!-- About / Careers -->
-    <section id="about"><h2>About</h2><p>Lean team, senior engineering network, OEM tie-ups. Built for speed and compliance.</p></section>
-    <section id="careers"><h2>Careers</h2><p>Hiring soon — project engineers, testing & commissioning, proposals. Drop a line at <a href="mailto:info@amcspark.com">info@amcspark.com</a>.</p></section>
+    <section id="about" class="section wrap"><h2>About</h2><p class="muted">Lean team, senior engineering network, OEM tie‑ups. Built for speed and compliance.</p></section>
+    <section id="careers" class="section wrap"><h2>Careers</h2><p class="muted">Hiring soon — project engineers, testing & commissioning, proposals. Drop a line at <a href="mailto:info@amcspark.com">info@amcspark.com</a>.</p></section>
   </main>
 
   <!-- Footer -->
-  <footer id="site-footer" role="contentinfo">
-    <div class="wrap grid4">
+  <footer class="wrap" role="contentinfo">
+    <div class="grid4">
       <section>
         <h3 class="logo">AMC <span class="brand-sub">Spark</span> & Services</h3>
-        <p>Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy-load sites.</p>
+        <p class="muted">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy‑load sites.</p>
       </section>
-      <section>
-        <h4>Company</h4>
-        <ul class="links"><li><a href="#services">Services</a></li><li><a href="#supply">Supply</a></li><li><a href="#projects">Projects</a></li></ul>
-      </section>
-      <section>
-        <h4>Resources</h4>
-        <ul class="links"><li><a href="#downloads">Downloads</a></li><li><a href="#forms">Forms</a></li><li><a href="#contact">Contact</a></li></ul>
-      </section>
-      <section>
-        <h4>Reach Us</h4>
-        <p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p>
-      </section>
+      <section><h4>Company</h4><ul class="links"><li><a href="#services">Services</a></li><li><a href="#supply">Supply</a></li><li><a href="#projects">Projects</a></li></ul></section>
+      <section><h4>Resources</h4><ul class="links"><li><a href="#downloads">Downloads</a></li><li><a href="#forms">Forms</a></li><li><a href="#contact">Contact</a></li></ul></section>
+      <section><h4>Reach Us</h4><p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p></section>
     </div>
-    <p class="copyright">© <span id="year">2025</span> AMC Spark & Services. All rights reserved. <a href="#home">Back to top ↑</a></p>
+    <p class="copyright">© <span id="year">2025</span> AMC Spark & Services. All rights reserved. <a class="btn ghost" href="#home">Back to top ↑</a></p>
   </footer>
 
-  <!-- External JS -->
-  <script src="/static/assets/app.js" defer></script>
+  <!-- JS (inline) -->
+  <script>
+  const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const toast=(m,ms=1500)=>{ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:88px;background:#0c1428;border:1px solid #24315c;padding:10px 14px;border-radius:999px;z-index:90'; document.body.appendChild(t);} t.textContent=m; t.style.display='block'; clearTimeout(t._to); t._to=setTimeout(()=>t.style.display='none',ms); };
+
+  // Year
+  $('#year').textContent = new Date().getFullYear();
+
+  // Drawer nav
+  const navT=$('#navToggle'), navL=$('#navlinks');
+  navT?.addEventListener('click',()=>{ const open=navL.classList.toggle('open'); navT.setAttribute('aria-expanded',open?'true':'false'); document.body.style.overflow = open? 'hidden':''; });
+  navL?.addEventListener('click',e=>{ if(e.target.closest('a')){ navL.classList.remove('open'); document.body.style.overflow=''; }});
+
+  // Theme
+  $('#themeBtn')?.addEventListener('click',()=>{ document.body.classList.toggle('light'); toast(document.body.classList.contains('light')?'Light mode ✨':'Dark mode 🌙'); });
+
+  // Tabs
+  const tabs=$$('.form-tabs .tab'); const panes=$$('.tabpanes .pane');
+  function activate(i){ tabs.forEach((t,ix)=>{t.classList.toggle('is-active',ix===i); t.setAttribute('aria-selected',ix===i?'true':'false')}); panes.forEach((p,ix)=>{p.classList.toggle('is-active',ix===i); p.hidden = ix!==i}); }
+  tabs.forEach((t,i)=> t.addEventListener('click',()=>activate(i))); activate(0);
+
+  // Smooth internal links (offset for header)
+  $$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{ const id=a.getAttribute('href').slice(1); const el=id && document.getElementById(id); if(!el) return; e.preventDefault(); const headerH=document.querySelector('header')?.offsetHeight||0; const y=el.getBoundingClientRect().top+window.scrollY-headerH-8; window.scrollTo({top:y,behavior:'smooth'}); }));
+
+  // Forms (fetch)
+  async function wireForm(sel,url,statusSel){ const f=$(sel); const s=$(statusSel); if(!f) return; f.addEventListener('submit',async e=>{ e.preventDefault(); s&&(s.textContent='Sending…'); try{ const fd=new FormData(f); const r=await fetch(url,{method:'POST',body:fd}); if(!r.ok) throw new Error('Network'); s&&(s.textContent='Done. We\'ll reach out soon ✅'); toast('Sent!'); f.reset(); window.scrollTo({top:0,behavior:'smooth'});}catch(err){ s&&(s.textContent='Failed. Try again.'); toast('Something went wrong ❌'); }}); }
+  wireForm('#qqForm','/api/quote','#qqStatus');
+  wireForm('#contactForm','/api/contact','#contactStatus');
+  wireForm('#projForm','/api/project','#projStatus');
+
+  // BackTop show/hide
+  const backTop=document.createElement('a'); backTop.id='backTop'; backTop.href='#home'; backTop.textContent='↑'; backTop.setAttribute('aria-label','Back to top'); document.body.appendChild(backTop);
+  window.addEventListener('scroll',()=>{ backTop.style.display = window.scrollY>600 ? 'inline-flex':'none'; });
+  </script>
 </body>
 </html>
