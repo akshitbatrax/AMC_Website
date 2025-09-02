@@ -27,113 +27,156 @@
   <!-- Preload LCP image -->
   <link rel="preload" as="image" href="/Power_Grid_Jamsedpur.jpg"/>
 
-  <!-- ===== Base CSS (your existing) ===== -->
-  <link rel="stylesheet" href="/static/assets/app.css"/>
-
-  <!-- ===== Add-on CSS for new components (scoped) ===== -->
+  <!-- ===== Mobile‑first CSS ===== -->
   <style>
+    /* ---- Color system ---- */
     :root{
-      --bg:#0b1020; --bg-2:#0e1428; --fg:#e7edf6; --muted:#aab6c5; --brand:#11b5ff;
-      --brand-2:#22c55e; --card:#111830; --glow:0 0 0 transparent;
+      --bg:#070b17; --bg-2:#0c1329; --bg-3:#0a0f22; --panel:#0c1428;
+      --fg:#eaf1fc; --muted:#aab6c5; --muted-2:#93a0b6;
+      --brand:#11b5ff; --brand-2:#22c55e; --accent:#b794f6; --warn:#ffd15e;
+      --border:#1a2550; --card:#0e1736; --ring:0 0 0 2px rgba(17,181,255,.35);
+      --shadow:0 20px 50px rgba(0,0,0,.5);
     }
+
+    @media (prefers-color-scheme: light){
+      :root{ --bg:#f6f9ff; --bg-2:#ffffff; --bg-3:#f2f6ff; --panel:#ffffff; --fg:#0b1020; --muted:#334155; --muted-2:#475569; --border:#e2e8f0; --card:#ffffff; --shadow:0 10px 30px rgba(2,6,23,.08);}  
+      body{background:linear-gradient(180deg,#f6f9ff,#fff)}
+    }
+
+    /* ---- Base ---- */
     html{scroll-behavior:smooth}
-    body{font-family:Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial; color:var(--fg); background:linear-gradient(180deg,var(--bg),#080d1a 40%,var(--bg-2));}
-    .wrap{max-width:1140px; margin-inline:auto; padding-inline:16px}
-    .btn{display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border:1px solid #2a355a; border-radius:999px; text-decoration:none; color:var(--fg);}
-    .btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand-2)); border:0; color:#041018; font-weight:800; box-shadow:0 8px 24px rgba(17,181,255,.15);}
+    body{margin:0; color:var(--fg); background:linear-gradient(180deg,var(--bg),#080d1a 40%,var(--bg-2));
+         font-family:Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;}
+    a{color:inherit}
+    img{max-width:100%; height:auto; display:block}
+    .wrap{max-width:1120px; margin-inline:auto; padding-inline:16px}
+
+    /* ---- Utilities ---- */
+    .btn{display:inline-flex; align-items:center; gap:.55rem; padding:.78rem 1rem; border:1px solid var(--border); border-radius:999px; text-decoration:none; color:var(--fg);
+         touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+    .btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand-2)); border:0; color:#041018; font-weight:800; box-shadow:0 10px 24px rgba(17,181,255,.18)}
     .btn.ghost{background:transparent}
     .btn.link{border:0; padding:0; text-decoration:underline}
-    .pill{display:inline-block; font-size:.85rem; padding:.35rem .6rem; border:1px solid #2a355a; border-radius:999px; color:#a7ffcf; background:rgba(34,197,94,.08)}
+    .pill{display:inline-block; font-size:.86rem; padding:.38rem .64rem; border:1px solid var(--border); border-radius:999px; color:#a7ffcf; background:rgba(34,197,94,.08)}
 
-    /* Header */
-    .header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(140%) blur(8px); background:rgba(8,13,26,.65); border-bottom:1px solid #182140}
-    .nav{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-block:12px}
-    .logo{display:flex; align-items:center; gap:.6rem; font-weight:900; letter-spacing:.2px}
+    /* ---- Header ---- */
+    .topbar{font-size:.95rem; background:#0c1426; border-bottom:1px solid var(--border)}
+    .topbar-inner{display:flex; gap:12px; align-items:center; justify-content:space-between; padding:.55rem 0}
+
+    .header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(140%) blur(8px); background:rgba(8,13,26,.65); border-bottom:1px solid var(--border)}
+    .nav{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-block:10px}
+    .logo{display:flex; align-items:center; gap:.6rem; font-weight:900; letter-spacing:.2px; white-space:nowrap}
     .logo svg{width:28px; height:28px}
     .brand-sub{color:var(--brand)}
-    .navlinks{display:flex; align-items:center; gap:1rem}
-    .navlinks a{color:var(--muted)}
-    .mobile-toggle{display:none}
-    .admin-chip{border:1px dashed #2f855a; color:#9fffcf}
-    @media (max-width: 900px){ .mobile-toggle{display:inline-flex} .navlinks{display:none} .navlinks.open{display:flex; flex-direction:column; position:absolute; left:0; right:0; top:60px; background:#0c142c; padding:12px; border-bottom:1px solid #182140} }
 
-    /* Hero */
-    .hero{display:grid; gap:18px; padding:64px 0}
-    .hero h1{font-size:clamp(1.8rem,2.4vw+1rem,3rem); line-height:1.15}
-    .hero .lead{color:var(--muted)}
+    /* Mobile drawer nav */
+    .mobile-toggle{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1px solid var(--border); background:transparent}
+    .navlinks{position:fixed; inset:auto 0 0 0; translate:0 100%; transition:translate .26s ease; background:var(--panel); border-top:1px solid var(--border); padding:14px 16px; display:grid; gap:10px; z-index:45}
+    .navlinks a,.navlinks button{padding:.9rem 1rem; border-radius:12px; border:1px solid var(--border); background:#0b1328}
+    .navlinks.open{translate:0 0}
+
+    /* Desktop nav (shown ≥ 900px) */
+    @media (min-width: 900px){
+      .mobile-toggle{display:none}
+      .navlinks{position:static; translate:none; background:transparent; border:0; padding:0; display:flex; gap:1rem}
+      .navlinks a,.navlinks button{border:0; background:transparent; padding:.4rem .5rem}
+    }
+
+    /* ---- Hero ---- */
+    .hero{display:grid; gap:14px; padding:28px 0 36px}
+    .hero h1{font-size:clamp(1.4rem,2.5vw+1rem,3rem); line-height:1.18; margin:0}
+    .lead{color:var(--muted)}
     .cta{display:flex; flex-wrap:wrap; gap:.8rem}
-    .hero-img{width:100%; border-radius:16px; border:1px solid #1a2346; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .hero-img{width:100%; border-radius:16px; border:1px solid var(--border); box-shadow:var(--shadow)}
 
-    /* Marquee */
-    .trust{padding:18px 0; border-block:1px solid #182140; background:#0c1426}
-    .marquee{display:flex; gap:32px; overflow:hidden; mask-image:linear-gradient(90deg,transparent, #000 8%, #000 92%, transparent)}
-    .marquee-track{display:flex; gap:32px; align-items:center; animation:scroll 24s linear infinite}
-    .marquee img{height:36px; opacity:.9; filter:grayscale(1)}
-    @keyframes scroll{from{transform:translateX(0)} to{transform:translateX(-50%)}}
+    /* ---- Marquee ---- */
+    .trust{padding:14px 0; border-block:1px solid var(--border); background:#0c1426}
+    .marquee{display:flex; gap:24px; overflow:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding-bottom:6px; mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+    .marquee img{height:30px; opacity:.9; filter:grayscale(1); scroll-snap-align:center}
 
-    /* Cards & Sections */
-    .section{padding:56px 0}
-    .cards{display:grid; gap:16px}
-    .cols-2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-    .cols-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-    .card{background:linear-gradient(180deg,#0b1328,#0a1224); border:1px solid #182140; border-radius:16px; padding:16px}
-    .muted{color:#aab6c5}
+    /* ---- Sections / Cards ---- */
+    .section{padding:34px 0}
+    .cards{display:grid; gap:12px}
+    .cols-2{grid-template-columns:1fr}
+    .cols-3{grid-template-columns:1fr}
+    .card{background:linear-gradient(180deg,#0b1328,#0a1224); border:1px solid var(--border); border-radius:16px; padding:14px}
+    .muted{color:var(--muted)}
 
-    /* Stats */
-    .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px}
-    .stat{padding:16px; border:1px solid #1b274a; border-radius:14px; text-align:center; background:#0c1428}
-    .stat b{font-size:1.6rem}
+    @media (min-width: 680px){ .cols-2{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    @media (min-width: 900px){ .cols-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
 
-    /* Gallery */
-    .gallery{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px}
-    .gitem{border:1px solid #1a2346; border-radius:16px; overflow:hidden; background:#0c1426}
-    .gitem img{width:100%; height:auto; display:block}
+    /* ---- Stats ---- */
+    .stats{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+    .stat{padding:14px; border:1px solid var(--border); border-radius:14px; text-align:center; background:#0c1428}
+    .stat b{font-size:1.45rem}
+    @media (min-width: 720px){ .stats{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+    /* ---- Gallery as snap slider on mobile ---- */
+    .gallery{display:grid; gap:10px; grid-auto-flow:column; grid-auto-columns:85%; overflow:auto; scroll-snap-type:x mandatory; padding-bottom:6px}
+    .gitem{border:1px solid var(--border); border-radius:16px; overflow:hidden; background:#0c1426; scroll-snap-align:center}
     .gitem figcaption{padding:10px; color:#b7c2d6}
+    @media (min-width: 900px){ .gallery{grid-auto-flow:unset; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible} }
 
-    /* Process */
-    .process{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
-    .step{border:1px dashed #2a355a; border-radius:16px; padding:16px; background:#0c1428}
+    /* ---- Process ---- */
+    .process{display:grid; grid-template-columns:1fr; gap:12px}
+    .step{border:1px dashed #2a355a; border-radius:16px; padding:14px; background:#0c1428}
+    @media (min-width: 780px){ .process{grid-template-columns:repeat(4,minmax(0,1fr))} }
 
-    /* Footer */
-    .footer{border-top:1px solid #182140; padding-top:28px; padding-bottom:32px}
-    .grid4{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-    .footer-meta{margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:#97a4b8}
+    /* ---- Forms ---- */
+    .form-tabs{display:flex; gap:8px; overflow:auto; padding-bottom:6px}
+    .tab{white-space:nowrap}
+    .form-grid{display:grid; gap:10px}
+    .field{display:grid; gap:6px}
+    .field input,.field select,.field textarea{appearance:none; width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--border); background:#0b1328; color:var(--fg); outline:none}
+    .field input:focus,.field select:focus,.field textarea:focus{box-shadow:var(--ring)}
+    .actions{display:flex; align-items:center; gap:10px}
 
-    /* Sticky CTA + Admin FAB */
-    .sticky-cta{position:fixed; bottom:18px; right:18px; z-index:40}
-    .admin-fab{position:fixed; bottom:18px; left:18px; z-index:40}
+    /* Mobile input quality */
+    input[type="email"]{text-transform:none}
+    #qqPhone,#phone{font-variant-numeric:tabular-nums}
+    #qqPhone{inputmode:numeric}
+    textarea{resize:vertical}
 
-    /* Toast / Loader */
-    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:90px; background:#0c1428; border:1px solid #24315c; padding:10px 14px; border-radius:999px; display:none}
+    /* ---- Footer ---- */
+    .footer{border-top:1px solid var(--border); padding-top:22px; padding-bottom:26px}
+    .grid4{display:grid; gap:14px; grid-template-columns:1fr}
+    @media (min-width: 860px){ .grid4{grid-template-columns:repeat(4,minmax(0,1fr))} }
+    .footer-meta{margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:#97a4b8; flex-wrap:wrap}
+
+    /* ---- Sticky bottom bar (mobile) ---- */
+    .bottombar{position:sticky; bottom:0; z-index:48; background:linear-gradient(180deg,rgba(9,14,28,.25),#0b1328 30%); border-top:1px solid var(--border); backdrop-filter:blur(6px)}
+    .bottombar .inner{display:flex; gap:8px; align-items:center; justify-content:space-between; padding:10px 16px}
+    .bottombar .cta-mini{display:flex; gap:8px}
+    @media (min-width: 900px){ .bottombar{display:none} }
+
+    /* ---- Toast / Loader ---- */
+    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:88px; background:#0c1428; border:1px solid var(--border); padding:10px 14px; border-radius:999px; display:none; z-index:60}
     .toast.show{display:block}
     .loaderfs{position:fixed; inset:0; display:grid; place-items:center; backdrop-filter:blur(2px); background:rgba(4,8,18,.35); opacity:0; pointer-events:none; transition:.2s}
     .loaderfs.show{opacity:1; pointer-events:auto}
     .spinner{width:42px; height:42px; border-radius:50%; border:5px solid #1e2648; border-top-color:var(--brand); animation:spin 1s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* Small helpers */
-    .help{color:#9bb0c9; font-size:.9rem}
-    .topbar{font-size:.92rem; background:#0c1426; border-bottom:1px solid #182140}
-    .topbar-inner{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0}
-  </style>
+    /* ---- Cosmetic glow accents ---- */
+    .glow{position:absolute; filter:blur(32px); opacity:.24; pointer-events:none; z-index:-1}
+    .glow.brand{background:radial-gradient(600px 200px at 20% -10%, rgba(17,181,255,.35), transparent 60%),
+                               radial-gradient(500px 180px at 80% -10%, rgba(34,197,94,.22), transparent 60%);
+                   inset:0}
 
-  <!-- JSON-LD (Organization + FAQ + Nav) -->
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Organization","name":"AMC Spark & Services","url":"https://www.amcspark.com/","logo":"/logo.png","email":"info@amcspark.com","telephone":"+91-9220533011","address":{"@type":"PostalAddress","streetAddress":"Room 001, C-7, Ground Floor","addressLocality":"Faridabad","addressRegion":"Haryana","postalCode":"121002","addressCountry":"IN"},"sameAs":[]}
-  </script>
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How fast can I get a quote?","acceptedAnswer":{"@type":"Answer","text":"Usually within 24 hours if scope/SLD/BOQ are shared."}},{"@type":"Question","name":"Do you support CEIG approvals?","acceptedAnswer":{"@type":"Answer","text":"Yes. We prepare documentation and coordinate approvals end-to-end."}}]}
-  </script>
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SiteNavigationElement","name":["Services","Supply","Projects","Forms","Contact","Admin"],"url":["#services","#supply","#projects","#forms","#contact","/admin"]}
-  </script>
+    /* Reduce motion for accessibility */
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none!important; transition:none!important; scroll-behavior:auto}
+    }
+  </style>
 </head>
 <body>
+  <div class="glow brand" aria-hidden="true"></div>
+
   <!-- ===== Topbar ===== -->
   <div class="topbar" role="region" aria-label="Announcement">
     <div class="wrap topbar-inner">
       <div>🔧 Project Desk: <strong>Quote in 24 hours</strong> • 📑 <strong>Tenders welcomed</strong> (GeM & eProcure)</div>
-      <div class="top-contacts">
+      <div class="top-contacts" style="display:flex; gap:8px; flex-wrap:wrap">
         <a class="btn ghost" href="tel:+919220533011">📞 +91 9220533011</a>
         <a class="btn ghost" href="mailto:info@amcspark.com">✉️ info@amcspark.com</a>
       </div>
@@ -151,15 +194,15 @@
         AMC <span class="brand-sub">Spark</span> & Services
       </a>
 
-      <button id="mobileBtn" class="mobile-toggle btn ghost" aria-label="Open Menu" type="button">☰</button>
+      <button id="mobileBtn" class="mobile-toggle" aria-label="Open Menu" type="button">☰</button>
 
       <nav id="navlinks" class="navlinks" aria-label="Primary">
         <a href="#services">Services</a>
         <a href="#supply">Supply</a>
         <a href="#projects">Projects</a>
         <a href="#forms">Forms</a>
-        <a href="#contact" class="btn ghost">Contact</a>
-        <a href="/admin" class="btn ghost admin-chip" title="Admin Dashboard">🔐 Admin</a>
+        <a href="#contact">Contact</a>
+        <a href="/admin">🔐 Admin</a>
         <button id="themeBtn" class="btn ghost" type="button" aria-label="Toggle theme">🌓 Theme</button>
       </nav>
     </div>
@@ -181,22 +224,16 @@
     </section>
   </main>
 
-  <!-- Trust marquee (moving logos) -->
+  <!-- Trust marquee (scroll-snap on mobile) -->
   <section class="trust" aria-label="Trusted by">
     <div class="wrap marquee" role="marquee" aria-roledescription="carousel">
-      <div class="marquee-track">
-        <img src="/static/assets/clients/adani.svg" alt="Adani" loading="lazy">
-        <img src="/static/assets/clients/pgcil.svg" alt="PGCIL" loading="lazy">
-        <img src="/static/assets/clients/railways.svg" alt="Indian Railways" loading="lazy">
-        <img src="/static/assets/clients/airport.svg" alt="Airports" loading="lazy">
-        <img src="/static/assets/clients/datacenter.svg" alt="Data Center" loading="lazy">
-        <!-- repeat for seamless loop -->
-        <img src="/static/assets/clients/adani.svg" alt="Adani" loading="lazy">
-        <img src="/static/assets/clients/pgcil.svg" alt="PGCIL" loading="lazy">
-        <img src="/static/assets/clients/railways.svg" alt="Indian Railways" loading="lazy">
-        <img src="/static/assets/clients/airport.svg" alt="Airports" loading="lazy">
-        <img src="/static/assets/clients/datacenter.svg" alt="Data Center" loading="lazy">
-      </div>
+      <img src="/static/assets/clients/adani.svg" alt="Adani" loading="lazy">
+      <img src="/static/assets/clients/pgcil.svg" alt="PGCIL" loading="lazy">
+      <img src="/static/assets/clients/railways.svg" alt="Indian Railways" loading="lazy">
+      <img src="/static/assets/clients/airport.svg" alt="Airports" loading="lazy">
+      <img src="/static/assets/clients/datacenter.svg" alt="Data Center" loading="lazy">
+      <img src="/static/assets/clients/adani.svg" alt="Adani" loading="lazy">
+      <img src="/static/assets/clients/pgcil.svg" alt="PGCIL" loading="lazy">
     </div>
   </section>
 
@@ -205,10 +242,10 @@
     <section class="section wrap" aria-labelledby="stats-title">
       <h2 id="stats-title">Why teams pick us 🧠</h2>
       <div class="stats">
-        <div class="stat">⚡ <b>24h</b><br><span class="help">Quote turnaround</span></div>
-        <div class="stat">🛡️ <b>CEIG</b><br><span class="help">Approval coordination</span></div>
-        <div class="stat">🕒 <b>24×7</b><br><span class="help">AMC support</span></div>
-        <div class="stat">🗺️ <b>Pan‑India</b><br><span class="help">Execution network</span></div>
+        <div class="stat">⚡ <b>24h</b><br><span class="muted">Quote turnaround</span></div>
+        <div class="stat">🛡️ <b>CEIG</b><br><span class="muted">Approval coordination</span></div>
+        <div class="stat">🕒 <b>24×7</b><br><span class="muted">AMC support</span></div>
+        <div class="stat">🗺️ <b>Pan‑India</b><br><span class="muted">Execution network</span></div>
       </div>
     </section>
 
@@ -216,29 +253,14 @@
     <section id="services" class="section wrap" aria-labelledby="services-title">
       <h2 id="services-title">Services 💼</h2>
       <div class="cards cols-3">
-        <article class="card">
-          <h3>Design & Studies</h3>
-          <p class="muted">SLD, load list, short-circuit, relay coordination, earthing grid, lightning layout.</p>
-        </article>
-        <article class="card">
-          <h3>Build & Install</h3>
-          <p class="muted">HT panels, transformers, bus ducts, cabling, terminations, SCADA & time-sync.</p>
-        </article>
-        <article class="card">
-          <h3>T&amp;C & Handover</h3>
-          <p class="muted">Method statements, ITPs, FAT/SAT, as-builts, O&amp;M, CEIG coordination.</p>
-        </article>
+        <article class="card"><h3>Design & Studies</h3><p class="muted">SLD, load list, short-circuit, relay coordination, earthing grid, lightning layout.</p></article>
+        <article class="card"><h3>Build & Install</h3><p class="muted">HT panels, transformers, bus ducts, cabling, terminations, SCADA & time-sync.</p></article>
+        <article class="card"><h3>T&amp;C & Handover</h3><p class="muted">Method statements, ITPs, FAT/SAT, as-builts, O&amp;M, CEIG coordination.</p></article>
       </div>
 
-      <div class="features" style="margin-top:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px">
-        <article class="card">
-          <h3>Testing & Commissioning</h3>
-          <p class="muted">Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p>
-        </article>
-        <article class="card">
-          <h3>Retrofits & AMC</h3>
-          <p class="muted">Relay upgrades, breaker retrofits, planned maintenance, 24×7 support, MTBF/MTTR dashboards.</p>
-        </article>
+      <div class="cards cols-2" style="margin-top:12px">
+        <article class="card"><h3>Testing & Commissioning</h3><p class="muted">Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p></article>
+        <article class="card"><h3>Retrofits & AMC</h3><p class="muted">Relay upgrades, breaker retrofits, planned maintenance, 24×7 support, MTBF/MTTR dashboards.</p></article>
       </div>
     </section>
 
@@ -253,7 +275,7 @@
       </div>
     </section>
 
-    <!-- Projects gallery -->
+    <!-- Projects gallery (snap) -->
     <section id="projects" class="section wrap" aria-labelledby="projects-title">
       <h2 id="projects-title">Featured Projects 📸</h2>
       <div class="gallery" aria-live="polite">
@@ -267,10 +289,10 @@
     <section class="section wrap" aria-labelledby="process-title">
       <h2 id="process-title">No-boring-bids Workflow ✍️➡️⚙️➡️✅</h2>
       <div class="process">
-        <div class="step">🧾 <b>Share scope</b><br><span class="help">SOW/SLD/BOQ & constraints</span></div>
-        <div class="step">📐 <b>Tech review</b><br><span class="help">Clarifications & OEM options</span></div>
-        <div class="step">💸 <b>Quote in 24h</b><br><span class="help">With alternates & lead-time</span></div>
-        <div class="step">🏗️ <b>Execute</b><br><span class="help">Docs • T&C • CEIG • Handover</span></div>
+        <div class="step">🧾 <b>Share scope</b><br><span class="muted">SOW/SLD/BOQ & constraints</span></div>
+        <div class="step">📐 <b>Tech review</b><br><span class="muted">Clarifications & OEM options</span></div>
+        <div class="step">💸 <b>Quote in 24h</b><br><span class="muted">With alternates & lead-time</span></div>
+        <div class="step">🏗️ <b>Execute</b><br><span class="muted">Docs • T&C • CEIG • Handover</span></div>
       </div>
     </section>
 
@@ -288,12 +310,12 @@
       </div>
     </section>
 
-    <!-- ===== COMBINED FORMS (3 buttons toggle → 3 forms) ===== -->
+    <!-- ===== COMBINED FORMS ===== -->
     <section id="forms" class="section wrap" aria-labelledby="forms-title">
       <h2 id="forms-title">Get in Touch / Request a Quote 📮</h2>
 
       <!-- Toggle buttons -->
-      <div class="form-tabs" role="tablist" aria-label="Form chooser" style="display:flex; gap:8px; margin-bottom:10px">
+      <div class="form-tabs" role="tablist" aria-label="Form chooser">
         <button id="btn-qq" class="btn tab active" role="tab" aria-selected="true" aria-controls="pane-qq" data-target="pane-qq" type="button">⚡ Quick Quote</button>
         <button id="btn-contact" class="btn tab" role="tab" aria-selected="false" aria-controls="pane-contact" data-target="pane-contact" type="button">✉️ Contact</button>
         <button id="btn-project" class="btn tab" role="tab" aria-selected="false" aria-controls="pane-project" data-target="pane-project" type="button">📝 Project Desk</button>
@@ -304,9 +326,9 @@
         <!-- Quick Quote -->
         <section id="pane-qq" class="pane active" role="tabpanel" aria-labelledby="btn-qq">
           <form id="qqForm" class="form-grid" novalidate>
-            <div class="field"><label for="qqName">Name *</label><input id="qqName" name="name" required></div>
-            <div class="field"><label for="qqEmail">Work Email *</label><input id="qqEmail" name="email" type="email" required></div>
-            <div class="field"><label for="qqPhone">Phone *</label><input id="qqPhone" name="phone" type="tel" required></div>
+            <div class="field"><label for="qqName">Name *</label><input id="qqName" name="name" required autocomplete="name"></div>
+            <div class="field"><label for="qqEmail">Work Email *</label><input id="qqEmail" name="email" type="email" required autocomplete="email" inputmode="email"></div>
+            <div class="field"><label for="qqPhone">Phone *</label><input id="qqPhone" name="phone" type="tel" required autocomplete="tel" inputmode="tel"></div>
             <div class="field"><label for="qqType">Type *</label>
               <select id="qqType" name="ptype" required>
                 <option value="">Select</option>
@@ -319,7 +341,7 @@
             <div class="field"><label for="qqNotes">Notes</label><textarea id="qqNotes" name="notes" rows="4" placeholder="Brief scope or constraints"></textarea></div>
             <div class="actions">
               <button class="btn primary" type="submit">Send</button>
-              <span id="qqStatus" class="help" aria-live="polite"></span>
+              <span id="qqStatus" class="muted" aria-live="polite"></span>
             </div>
           </form>
         </section>
@@ -327,14 +349,14 @@
         <!-- Contact -->
         <section id="pane-contact" class="pane" role="tabpanel" aria-labelledby="btn-contact" hidden>
           <form id="contactForm" class="form-grid" novalidate>
-            <div class="field"><label for="cname">Name *</label><input id="cname" name="name" required></div>
-            <div class="field"><label for="cemail">Email *</label><input id="cemail" name="email" type="email" required></div>
+            <div class="field"><label for="cname">Name *</label><input id="cname" name="name" required autocomplete="name"></div>
+            <div class="field"><label for="cemail">Email *</label><input id="cemail" name="email" type="email" required autocomplete="email" inputmode="email"></div>
             <div class="field"><label for="cmsg">Message *</label><textarea id="cmsg" name="message" rows="5" required></textarea></div>
             <div class="actions">
               <button class="btn primary" type="submit">Send</button>
-              <span id="contactStatus" class="help" aria-live="polite"></span>
+              <span id="contactStatus" class="muted" aria-live="polite"></span>
             </div>
-            <p class="help">We usually reply within 24 hours. For tenders, attach docs in the Project Desk tab.</p>
+            <p class="muted">We usually reply within 24 hours. For tenders, attach docs in the Project Desk tab.</p>
           </form>
         </section>
 
@@ -343,8 +365,8 @@
           <form id="projForm" class="form-grid" enctype="multipart/form-data" novalidate>
             <div class="field"><label for="org">Organisation / Dept *</label><input id="org" name="org" required autocomplete="organization"></div>
             <div class="field"><label for="name">Contact Name *</label><input id="name" name="name" required autocomplete="name"></div>
-            <div class="field"><label for="email">Work Email *</label><input id="email" name="email" type="email" required autocomplete="email"></div>
-            <div class="field"><label for="phone">Phone *</label><input id="phone" name="phone" type="tel" required autocomplete="tel"></div>
+            <div class="field"><label for="email">Work Email *</label><input id="email" name="email" type="email" required autocomplete="email" inputmode="email"></div>
+            <div class="field"><label for="phone">Phone *</label><input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel"></div>
             <div class="field"><label for="location">Site Location *</label><input id="location" name="location" required></div>
             <div class="field"><label for="ptype">Project Type *</label>
               <select id="ptype" name="ptype" required>
@@ -373,7 +395,7 @@
             <div class="field"><label for="notes">Notes / Scope Summary</label><textarea id="notes" name="notes" rows="4" placeholder="Brief scope, constraints, preferred OEMs, timelines…"></textarea></div>
             <div class="actions">
               <button class="btn primary" type="submit">Request Quote</button>
-              <span id="projStatus" class="help" aria-live="polite"></span>
+              <span id="projStatus" class="muted" aria-live="polite"></span>
             </div>
           </form>
         </section>
@@ -418,7 +440,7 @@
           </svg>
           AMC <span class="brand-sub">Spark</span> & Services
         </div>
-        <p class="help">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy-load sites.</p>
+        <p class="muted">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy-load sites.</p>
       </div>
       <div><h4>Company</h4><ul class="list">
         <li><a href="#services">Services</a></li><li><a href="#supply">Supply</a></li><li><a href="#projects">Projects</a></li></ul></div>
@@ -433,10 +455,18 @@
     </div>
   </footer>
 
-  <!-- ===== Sticky helpers / Toast / Loader ===== -->
-  <div class="sticky-cta"><a class="btn primary" href="#forms">Get a Quote</a></div>
-  <div class="admin-fab"><a class="btn ghost" href="/admin" title="Admin Dashboard">🔐 Admin</a></div>
-  <a id="backTop" class="btn ghost backtop" href="#home" aria-label="Back to top" style="position:fixed; right:18px; bottom:76px; display:none">↑</a>
+  <!-- ===== Sticky bottom bar (mobile only) ===== -->
+  <div class="bottombar" role="region" aria-label="Quick actions">
+    <div class="inner wrap">
+      <div style="font-weight:800">Heavy‑load sites. Light‑speed delivery ⚡</div>
+      <div class="cta-mini">
+        <a class="btn ghost" href="tel:+919220533011">Call</a>
+        <a class="btn primary" href="#forms">Get a Quote</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toast / Loader ===== -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="loaderFS" class="loaderfs" aria-hidden="true"><div class="spinner" aria-hidden="true"></div></div>
 
@@ -451,18 +481,22 @@
     // Year
     $('#year').textContent = new Date().getFullYear();
 
-    // Mobile menu
-    $('#mobileBtn')?.addEventListener('click',()=> $('#navlinks').classList.toggle('open'));
+    // Mobile menu drawer
+    const mobileBtn = $('#mobileBtn');
+    const navlinks = $('#navlinks');
+    mobileBtn?.addEventListener('click',()=>{
+      const open = navlinks.classList.toggle('open');
+      mobileBtn.setAttribute('aria-label', open? 'Close Menu':'Open Menu');
+      document.body.style.overflow = open? 'hidden' : '';
+    });
+    // Close drawer when clicking a link
+    navlinks?.addEventListener('click', (e)=>{ if(e.target.closest('a')){ navlinks.classList.remove('open'); document.body.style.overflow=''; } });
 
     // Theme toggle (simple)
     $('#themeBtn')?.addEventListener('click',()=>{
       document.documentElement.classList.toggle('light');
       toast(document.documentElement.classList.contains('light')? 'Light mode ✨':'Dark mode 🌙');
     });
-
-    // Back to top
-    const backTop = $('#backTop');
-    window.addEventListener('scroll',()=>{ backTop.style.display = window.scrollY>500 ? 'inline-flex':'none'; });
 
     // Tabs
     $$('.tab').forEach(btn=>btn.addEventListener('click',()=>{
@@ -471,11 +505,12 @@
       $$('.pane').forEach(p=>p.hidden=true);
       const pane = document.getElementById(btn.dataset.target);
       pane.hidden=false; pane.classList.add('active');
+      pane.querySelector('input, textarea, select')?.focus({preventScroll:true});
     }));
 
     // Forms (client-side only; hook to your Flask endpoints)
-    const submitForm = async (formId, url, statusSel) => {
-      const form = $(formId); const status = $(statusSel); const loader = $('#loaderFS');
+    const submitForm = (formSel, url, statusSel) => {
+      const form = $(formSel); const status = $(statusSel); const loader = $('#loaderFS');
       form?.addEventListener('submit', async (e)=>{
         e.preventDefault(); status.textContent='Sending…'; loader.classList.add('show');
         try{
@@ -483,6 +518,8 @@
           const resp = await fetch(url, { method:'POST', body:fd });
           if(!resp.ok) throw new Error('Network');
           status.textContent='Done. We\'ll reach out soon ✅'; toast('Sent!'); form.reset();
+          // Auto switch to Contact tab confirmation on mobile
+          if (window.innerWidth < 680) window.scrollTo({top:0, behavior:'smooth'});
         }catch(err){ status.textContent='Failed. Try again.'; toast('Something went wrong ❌'); }
         finally{ loader.classList.remove('show'); }
       });
@@ -491,14 +528,8 @@
     submitForm('#contactForm','/api/contact','#contactStatus');
     submitForm('#projForm','/api/project','#projStatus');
 
-    // Brand modal (auto once per session)
-    (function brandModal(){
-      const key='amcBrandSeen';
-      if(sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key,'1');
-      // Friendly toast instead of blocking modal; uncomment if you want full modal logic
-      toast('“Heavy-load sites. Light-speed delivery.” ⚡');
-    })();
+    // Improve tap targets in iOS Safari by removing 300ms delay
+    window.addEventListener('touchstart',()=>{}, {passive:true});
   </script>
 </body>
 </html>
