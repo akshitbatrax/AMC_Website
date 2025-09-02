@@ -8,45 +8,127 @@
   <meta name="description" content="Direct electrical projects, EPC, testing & commissioning, retrofits, AMC, and OEM/MRO supply for heavy-load industrial, infrastructure, utilities & data centers. Quote in 24 hours."/>
   <link rel="canonical" href="https://www.amcspark.com/"/>
   <link rel="icon" href="/favicon.ico"/>
+  <meta name="theme-color" content="#0b1020"/>
 
   <!-- Open Graph / Twitter -->
   <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="AMC Spark & Services"/>
   <meta property="og:title" content="AMC Spark & Services — Electrical Projects & OEM Supply"/>
   <meta property="og:description" content="Heavy-load electrical works. EPC • T&C • Retrofits • AMC • OEM/MRO. Quote in 24 hours."/>
+  <meta property="og:url" content="https://www.amcspark.com/"/>
   <meta property="og:image" content="/Power_Grid_Jamsedpur.jpg"/>
   <meta name="twitter:card" content="summary_large_image"/>
 
-  <!-- Fonts (optional) -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <!-- ===== External CSS ===== -->
+  <!-- Preload LCP image -->
+  <link rel="preload" as="image" href="/Power_Grid_Jamsedpur.jpg"/>
+
+  <!-- ===== Base CSS (your existing) ===== -->
   <link rel="stylesheet" href="/static/assets/app.css"/>
 
-  <!-- JSON-LD (optional, SEO) -->
+  <!-- ===== Add-on CSS for new components (scoped) ===== -->
+  <style>
+    :root{
+      --bg:#0b1020; --bg-2:#0e1428; --fg:#e7edf6; --muted:#aab6c5; --brand:#11b5ff;
+      --brand-2:#22c55e; --card:#111830; --glow:0 0 0 transparent;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial; color:var(--fg); background:linear-gradient(180deg,var(--bg),#080d1a 40%,var(--bg-2));}
+    .wrap{max-width:1140px; margin-inline:auto; padding-inline:16px}
+    .btn{display:inline-flex; align-items:center; gap:.5rem; padding:.7rem 1rem; border:1px solid #2a355a; border-radius:999px; text-decoration:none; color:var(--fg);}
+    .btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand-2)); border:0; color:#041018; font-weight:800; box-shadow:0 8px 24px rgba(17,181,255,.15);}
+    .btn.ghost{background:transparent}
+    .btn.link{border:0; padding:0; text-decoration:underline}
+    .pill{display:inline-block; font-size:.85rem; padding:.35rem .6rem; border:1px solid #2a355a; border-radius:999px; color:#a7ffcf; background:rgba(34,197,94,.08)}
+
+    /* Header */
+    .header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(140%) blur(8px); background:rgba(8,13,26,.65); border-bottom:1px solid #182140}
+    .nav{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-block:12px}
+    .logo{display:flex; align-items:center; gap:.6rem; font-weight:900; letter-spacing:.2px}
+    .logo svg{width:28px; height:28px}
+    .brand-sub{color:var(--brand)}
+    .navlinks{display:flex; align-items:center; gap:1rem}
+    .navlinks a{color:var(--muted)}
+    .mobile-toggle{display:none}
+    .admin-chip{border:1px dashed #2f855a; color:#9fffcf}
+    @media (max-width: 900px){ .mobile-toggle{display:inline-flex} .navlinks{display:none} .navlinks.open{display:flex; flex-direction:column; position:absolute; left:0; right:0; top:60px; background:#0c142c; padding:12px; border-bottom:1px solid #182140} }
+
+    /* Hero */
+    .hero{display:grid; gap:18px; padding:64px 0}
+    .hero h1{font-size:clamp(1.8rem,2.4vw+1rem,3rem); line-height:1.15}
+    .hero .lead{color:var(--muted)}
+    .cta{display:flex; flex-wrap:wrap; gap:.8rem}
+    .hero-img{width:100%; border-radius:16px; border:1px solid #1a2346; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+
+    /* Marquee */
+    .trust{padding:18px 0; border-block:1px solid #182140; background:#0c1426}
+    .marquee{display:flex; gap:32px; overflow:hidden; mask-image:linear-gradient(90deg,transparent, #000 8%, #000 92%, transparent)}
+    .marquee-track{display:flex; gap:32px; align-items:center; animation:scroll 24s linear infinite}
+    .marquee img{height:36px; opacity:.9; filter:grayscale(1)}
+    @keyframes scroll{from{transform:translateX(0)} to{transform:translateX(-50%)}}
+
+    /* Cards & Sections */
+    .section{padding:56px 0}
+    .cards{display:grid; gap:16px}
+    .cols-2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+    .cols-3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .card{background:linear-gradient(180deg,#0b1328,#0a1224); border:1px solid #182140; border-radius:16px; padding:16px}
+    .muted{color:#aab6c5}
+
+    /* Stats */
+    .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px}
+    .stat{padding:16px; border:1px solid #1b274a; border-radius:14px; text-align:center; background:#0c1428}
+    .stat b{font-size:1.6rem}
+
+    /* Gallery */
+    .gallery{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px}
+    .gitem{border:1px solid #1a2346; border-radius:16px; overflow:hidden; background:#0c1426}
+    .gitem img{width:100%; height:auto; display:block}
+    .gitem figcaption{padding:10px; color:#b7c2d6}
+
+    /* Process */
+    .process{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+    .step{border:1px dashed #2a355a; border-radius:16px; padding:16px; background:#0c1428}
+
+    /* Footer */
+    .footer{border-top:1px solid #182140; padding-top:28px; padding-bottom:32px}
+    .grid4{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .footer-meta{margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:#97a4b8}
+
+    /* Sticky CTA + Admin FAB */
+    .sticky-cta{position:fixed; bottom:18px; right:18px; z-index:40}
+    .admin-fab{position:fixed; bottom:18px; left:18px; z-index:40}
+
+    /* Toast / Loader */
+    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:90px; background:#0c1428; border:1px solid #24315c; padding:10px 14px; border-radius:999px; display:none}
+    .toast.show{display:block}
+    .loaderfs{position:fixed; inset:0; display:grid; place-items:center; backdrop-filter:blur(2px); background:rgba(4,8,18,.35); opacity:0; pointer-events:none; transition:.2s}
+    .loaderfs.show{opacity:1; pointer-events:auto}
+    .spinner{width:42px; height:42px; border-radius:50%; border:5px solid #1e2648; border-top-color:var(--brand); animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Small helpers */
+    .help{color:#9bb0c9; font-size:.9rem}
+    .topbar{font-size:.92rem; background:#0c1426; border-bottom:1px solid #182140}
+    .topbar-inner{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0}
+  </style>
+
+  <!-- JSON-LD (Organization + FAQ + Nav) -->
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Organization","name":"AMC Spark & Services","url":"https://www.amcspark.com/","logo":"/logo.png","email":"info@amcspark.com","telephone":"+91-9220533011","address":{"@type":"PostalAddress","streetAddress":"Room 001, C-7, Ground Floor","addressCountry":"IN"},"hasMap":"https://maps.app.goo.gl/RoAQtTmxBF8ZhkEg9","sameAs":[]}
+  {"@context":"https://schema.org","@type":"Organization","name":"AMC Spark & Services","url":"https://www.amcspark.com/","logo":"/logo.png","email":"info@amcspark.com","telephone":"+91-9220533011","address":{"@type":"PostalAddress","streetAddress":"Room 001, C-7, Ground Floor","addressLocality":"Faridabad","addressRegion":"Haryana","postalCode":"121002","addressCountry":"IN"},"sameAs":[]}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How fast can I get a quote?","acceptedAnswer":{"@type":"Answer","text":"Usually within 24 hours if scope/SLD/BOQ are shared."}},{"@type":"Question","name":"Do you support CEIG approvals?","acceptedAnswer":{"@type":"Answer","text":"Yes. We prepare documentation and coordinate approvals end-to-end."}}]}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"SiteNavigationElement","name":["Services","Supply","Projects","Forms","Contact","Admin"],"url":["#services","#supply","#projects","#forms","#contact","/admin"]}
   </script>
 </head>
 <body>
-  <!-- ===== Brand Tagline Popup (auto-show) ===== -->
-  <div id="brandModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="brandTitle" aria-describedby="brandDesc" hidden>
-    <div class="window brand-popup">
-      <header class="modal-head">
-        <h3 id="brandTitle">⚡ AMC Spark & Services</h3>
-        <button id="brandClose" class="btn ghost" type="button" aria-label="Close">✕</button>
-      </header>
-      <div class="modal-body">
-        <p id="brandDesc" class="lead">“Heavy-load sites. Light-speed delivery.”<br><small>EPC • Retrofits • Testing & Commissioning • AMC • OEM/MRO — Quote in 24 hours.</small></p>
-        <div class="actions">
-          <a class="btn primary" href="#forms">Start a Quote</a>
-          <a class="btn ghost" href="#projects">See Projects</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ===== Topbar ===== -->
   <div class="topbar" role="region" aria-label="Announcement">
     <div class="wrap topbar-inner">
@@ -77,15 +159,16 @@
         <a href="#projects">Projects</a>
         <a href="#forms">Forms</a>
         <a href="#contact" class="btn ghost">Contact</a>
+        <a href="/admin" class="btn ghost admin-chip" title="Admin Dashboard">🔐 Admin</a>
         <button id="themeBtn" class="btn ghost" type="button" aria-label="Toggle theme">🌓 Theme</button>
       </nav>
     </div>
   </header>
 
   <!-- ===== Main ===== -->
-  <main id="home">
+  <main id="home" class="wrap">
     <!-- Hero -->
-    <section class="section hero wrap" aria-labelledby="hero-title">
+    <section class="section hero" aria-labelledby="hero-title">
       <span class="pill">Direct Projects • Retrofits • AMC • OEM/MRO Supply</span>
       <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy-Load Sites ⚡</h1>
       <p class="lead">EPC, Testing & Commissioning, Retrofits, AMC — <strong>11–66 kV</strong> substations, HT panels, bus ducts, protection & relays, earthing and lightning protection.</p>
@@ -94,12 +177,44 @@
         <a class="btn ghost" href="#projects">🧷 View Projects</a>
         <a class="btn link" href="#downloads">📄 Download Profile</a>
       </div>
-      <img class="hero-img" src="/Power_Grid_Jamsedpur.jpg" alt="Power Grid substation — Jamshedpur, India" width="1200" height="420">
+      <img class="hero-img" src="/Power_Grid_Jamsedpur.jpg" alt="Power Grid substation — Jamshedpur, India" width="1200" height="420" loading="eager"/>
+    </section>
+  </main>
+
+  <!-- Trust marquee (moving logos) -->
+  <section class="trust" aria-label="Trusted by">
+    <div class="wrap marquee" role="marquee" aria-roledescription="carousel">
+      <div class="marquee-track">
+        <img src="/static/assets/clients/adani.svg" alt="Adani" loading="lazy">
+        <img src="/static/assets/clients/pgcil.svg" alt="PGCIL" loading="lazy">
+        <img src="/static/assets/clients/railways.svg" alt="Indian Railways" loading="lazy">
+        <img src="/static/assets/clients/airport.svg" alt="Airports" loading="lazy">
+        <img src="/static/assets/clients/datacenter.svg" alt="Data Center" loading="lazy">
+        <!-- repeat for seamless loop -->
+        <img src="/static/assets/clients/adani.svg" alt="Adani" loading="lazy">
+        <img src="/static/assets/clients/pgcil.svg" alt="PGCIL" loading="lazy">
+        <img src="/static/assets/clients/railways.svg" alt="Indian Railways" loading="lazy">
+        <img src="/static/assets/clients/airport.svg" alt="Airports" loading="lazy">
+        <img src="/static/assets/clients/datacenter.svg" alt="Data Center" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <!-- Quick Stats -->
+    <section class="section wrap" aria-labelledby="stats-title">
+      <h2 id="stats-title">Why teams pick us 🧠</h2>
+      <div class="stats">
+        <div class="stat">⚡ <b>24h</b><br><span class="help">Quote turnaround</span></div>
+        <div class="stat">🛡️ <b>CEIG</b><br><span class="help">Approval coordination</span></div>
+        <div class="stat">🕒 <b>24×7</b><br><span class="help">AMC support</span></div>
+        <div class="stat">🗺️ <b>Pan‑India</b><br><span class="help">Execution network</span></div>
+      </div>
     </section>
 
     <!-- Services -->
     <section id="services" class="section wrap" aria-labelledby="services-title">
-      <h2 id="services-title">Services</h2>
+      <h2 id="services-title">Services 💼</h2>
       <div class="cards cols-3">
         <article class="card">
           <h3>Design & Studies</h3>
@@ -115,7 +230,7 @@
         </article>
       </div>
 
-      <div class="features">
+      <div class="features" style="margin-top:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px">
         <article class="card">
           <h3>Testing & Commissioning</h3>
           <p class="muted">Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p>
@@ -129,7 +244,7 @@
 
     <!-- Supply -->
     <section id="supply" class="section wrap" aria-labelledby="supply-title">
-      <h2 id="supply-title">OEM / MRO Supply</h2>
+      <h2 id="supply-title">OEM / MRO Supply 📦</h2>
       <div class="cards cols-2">
         <article class="card"><h3>HT Panels & Relays</h3><p class="muted">VCB/SFU, protection relays, upgrades & commissioning support.</p></article>
         <article class="card"><h3>Transformers & CT/PT</h3><p class="muted">Oil/Dry types, NGR, AVR, accessories and testing.</p></article>
@@ -138,39 +253,50 @@
       </div>
     </section>
 
-    <!-- Projects -->
+    <!-- Projects gallery -->
     <section id="projects" class="section wrap" aria-labelledby="projects-title">
-      <h2 id="projects-title">Featured Projects</h2>
+      <h2 id="projects-title">Featured Projects 📸</h2>
       <div class="gallery" aria-live="polite">
-        <figure class="gitem"><img src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" alt="220 kV AIS substation, Andhra Pradesh" width="1280" height="720"><figcaption>220 kV AIS Substation — Andhra Pradesh</figcaption></figure>
-        <figure class="gitem"><img src="/Traction_Substation_at_Simhachalam_01.jpg" alt="Traction substation, Vizag" width="1280" height="720"><figcaption>Traction Substation — Railways (Vizag)</figcaption></figure>
-        <figure class="gitem"><img src="/Power_substation_patigadda.jpg" alt="Urban substation, Hyderabad" width="1280" height="720"><figcaption>Urban Substation — Hyderabad</figcaption></figure>
+        <figure class="gitem"><img src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" alt="220 kV AIS substation, Andhra Pradesh" width="1280" height="720" loading="lazy"><figcaption>220 kV AIS Substation — Andhra Pradesh</figcaption></figure>
+        <figure class="gitem"><img src="/Traction_Substation_at_Simhachalam_01.jpg" alt="Traction substation, Vizag" width="1280" height="720" loading="lazy"><figcaption>Traction Substation — Railways (Vizag)</figcaption></figure>
+        <figure class="gitem"><img src="/Power_substation_patigadda.jpg" alt="Urban substation, Hyderabad" width="1280" height="720" loading="lazy"><figcaption>Urban Substation — Hyderabad</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section class="section wrap" aria-labelledby="process-title">
+      <h2 id="process-title">No-boring-bids Workflow ✍️➡️⚙️➡️✅</h2>
+      <div class="process">
+        <div class="step">🧾 <b>Share scope</b><br><span class="help">SOW/SLD/BOQ & constraints</span></div>
+        <div class="step">📐 <b>Tech review</b><br><span class="help">Clarifications & OEM options</span></div>
+        <div class="step">💸 <b>Quote in 24h</b><br><span class="help">With alternates & lead-time</span></div>
+        <div class="step">🏗️ <b>Execute</b><br><span class="help">Docs • T&C • CEIG • Handover</span></div>
       </div>
     </section>
 
     <!-- Downloads -->
     <section id="downloads" class="section wrap" aria-labelledby="downloads-title">
-      <h2 id="downloads-title">Capabilities & Documentation</h2>
+      <h2 id="downloads-title">Capabilities & Documentation 📚</h2>
       <div class="cards cols-3">
         <article class="card"><h3>Technical</h3><p class="muted">HT panels, transformers, CT/PT, AVR, bus ducts, cabling, protection & relays, SCADA, SOE, time sync.</p></article>
         <article class="card"><h3>Quality & Safety</h3><p class="muted">Method statements, ITPs, FAT/SAT, NABL traceability, LOTO, PTW, PPE, toolbox talks.</p></article>
         <article class="card"><h3>Downloads</h3>
-          <p><a class="btn link" href="#">Company Profile (PDF)</a><br>
-             <a class="btn link" href="#">Capability Statement (PDF)</a><br>
-             <a class="btn link" href="#">HSE Policy (PDF)</a></p>
+          <p><a class="btn link" href="/static/amc-profile.pdf">Company Profile (PDF)</a><br>
+             <a class="btn link" href="/static/amc-capability.pdf">Capability Statement (PDF)</a><br>
+             <a class="btn link" href="/static/amc-hse.pdf">HSE Policy (PDF)</a></p>
         </article>
       </div>
     </section>
 
     <!-- ===== COMBINED FORMS (3 buttons toggle → 3 forms) ===== -->
     <section id="forms" class="section wrap" aria-labelledby="forms-title">
-      <h2 id="forms-title">Get in Touch / Request a Quote</h2>
+      <h2 id="forms-title">Get in Touch / Request a Quote 📮</h2>
 
       <!-- Toggle buttons -->
-      <div class="form-tabs" role="tablist" aria-label="Form chooser">
-        <button id="btn-qq" class="tab active" role="tab" aria-selected="true" aria-controls="pane-qq" data-target="pane-qq" type="button">⚡ Quick Quote</button>
-        <button id="btn-contact" class="tab" role="tab" aria-selected="false" aria-controls="pane-contact" data-target="pane-contact" type="button">✉️ Contact</button>
-        <button id="btn-project" class="tab" role="tab" aria-selected="false" aria-controls="pane-project" data-target="pane-project" type="button">📝 Project Desk</button>
+      <div class="form-tabs" role="tablist" aria-label="Form chooser" style="display:flex; gap:8px; margin-bottom:10px">
+        <button id="btn-qq" class="btn tab active" role="tab" aria-selected="true" aria-controls="pane-qq" data-target="pane-qq" type="button">⚡ Quick Quote</button>
+        <button id="btn-contact" class="btn tab" role="tab" aria-selected="false" aria-controls="pane-contact" data-target="pane-contact" type="button">✉️ Contact</button>
+        <button id="btn-project" class="btn tab" role="tab" aria-selected="false" aria-controls="pane-project" data-target="pane-project" type="button">📝 Project Desk</button>
       </div>
 
       <!-- Panes -->
@@ -256,7 +382,7 @@
 
     <!-- Contact (company info) -->
     <section id="contact" class="section wrap" aria-labelledby="contact-title">
-      <h2 id="contact-title">Reach Us</h2>
+      <h2 id="contact-title">Reach Us 📍</h2>
       <div class="cards cols-2">
         <article class="card">
           <h3>AMC Spark & Services</h3>
@@ -270,10 +396,15 @@
           <h3>Shortcuts</h3>
           <p><a class="btn link" href="#forms">Forms</a><br>
              <a class="btn link" href="#projects">Projects</a><br>
-             <a class="btn link" href="#downloads">Downloads</a></p>
+             <a class="btn link" href="#downloads">Downloads</a><br>
+             <a class="btn link" href="#careers">Careers</a></p>
         </article>
       </div>
     </section>
+
+    <!-- Placeholder sections to avoid dead links -->
+    <section id="about" class="section wrap"><h2>About</h2><p class="muted">Lean team, senior engineering network, OEM tie-ups. Built for speed ⚡ and compliance.</p></section>
+    <section id="careers" class="section wrap"><h2>Careers</h2><p class="muted">Hiring soon — project engineers, testing & commissioning, proposals. Drop a line at <a href="mailto:info@amcspark.com">info@amcspark.com</a>.</p></section>
   </main>
 
   <!-- ===== Footer ===== -->
@@ -302,15 +433,72 @@
     </div>
   </footer>
 
-  <!-- ===== Sticky helpers / Toast / Loader (markup only; JS handles) ===== -->
+  <!-- ===== Sticky helpers / Toast / Loader ===== -->
   <div class="sticky-cta"><a class="btn primary" href="#forms">Get a Quote</a></div>
-  <a id="backTop" class="btn ghost backtop" href="#home" aria-label="Back to top">↑</a>
+  <div class="admin-fab"><a class="btn ghost" href="/admin" title="Admin Dashboard">🔐 Admin</a></div>
+  <a id="backTop" class="btn ghost backtop" href="#home" aria-label="Back to top" style="position:fixed; right:18px; bottom:76px; display:none">↑</a>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="loaderFS" class="loaderfs" aria-hidden="true"><div class="spinner" aria-hidden="true"></div></div>
 
   <noscript><div class="wrap" style="padding:10px; text-align:center">JavaScript is disabled. Interactive features are limited.</div></noscript>
 
-  <!-- ===== External JS ===== -->
-  <script src="/static/assets/app.js" defer></script>
+  <!-- ===== JS ===== -->
+  <script>
+    const $ = (s, r=document) => r.querySelector(s);
+    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+    const toast = (msg, ms=1600) => { const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),ms); };
+
+    // Year
+    $('#year').textContent = new Date().getFullYear();
+
+    // Mobile menu
+    $('#mobileBtn')?.addEventListener('click',()=> $('#navlinks').classList.toggle('open'));
+
+    // Theme toggle (simple)
+    $('#themeBtn')?.addEventListener('click',()=>{
+      document.documentElement.classList.toggle('light');
+      toast(document.documentElement.classList.contains('light')? 'Light mode ✨':'Dark mode 🌙');
+    });
+
+    // Back to top
+    const backTop = $('#backTop');
+    window.addEventListener('scroll',()=>{ backTop.style.display = window.scrollY>500 ? 'inline-flex':'none'; });
+
+    // Tabs
+    $$('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+      $$('.tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      $$('.pane').forEach(p=>p.hidden=true);
+      const pane = document.getElementById(btn.dataset.target);
+      pane.hidden=false; pane.classList.add('active');
+    }));
+
+    // Forms (client-side only; hook to your Flask endpoints)
+    const submitForm = async (formId, url, statusSel) => {
+      const form = $(formId); const status = $(statusSel); const loader = $('#loaderFS');
+      form?.addEventListener('submit', async (e)=>{
+        e.preventDefault(); status.textContent='Sending…'; loader.classList.add('show');
+        try{
+          const fd = new FormData(form);
+          const resp = await fetch(url, { method:'POST', body:fd });
+          if(!resp.ok) throw new Error('Network');
+          status.textContent='Done. We\'ll reach out soon ✅'; toast('Sent!'); form.reset();
+        }catch(err){ status.textContent='Failed. Try again.'; toast('Something went wrong ❌'); }
+        finally{ loader.classList.remove('show'); }
+      });
+    };
+    submitForm('#qqForm','/api/quote','#qqStatus');
+    submitForm('#contactForm','/api/contact','#contactStatus');
+    submitForm('#projForm','/api/project','#projStatus');
+
+    // Brand modal (auto once per session)
+    (function brandModal(){
+      const key='amcBrandSeen';
+      if(sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key,'1');
+      // Friendly toast instead of blocking modal; uncomment if you want full modal logic
+      toast('“Heavy-load sites. Light-speed delivery.” ⚡');
+    })();
+  </script>
 </body>
 </html>
