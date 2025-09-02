@@ -6,140 +6,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>AMC Spark & Services — Direct Electrical Projects & OEM Supply (11–66 kV)</title>
   <meta name="description" content="Direct electrical projects, testing & commissioning, retrofits, AMC, and OEM/MRO supply for industrial, infrastructure, utilities, and data centers."/>
+  <link rel="canonical" href="https://www.amcspark.com/"/>
   <link rel="icon" href="/favicon.ico"/>
 
-  <!-- ===== Font ===== -->
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts (optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 
-  <!-- ===== Styles (mobile-first, airy spacing) ===== -->
-  <style>
-    :root{
-      --bg:#0b1020; --fg:#eef2ff; --muted:#a6b3d4; --card:#121833; --line:#ffffff19;
-      --brand:#11b5ff; --brand2:#22c55e; --wrap:clamp(16px,5vw,28px); --radius:18px;
-      --space-1:10px; --space-2:16px; --space-3:22px; --space-4:34px; --space-5:54px;
-      --shadow:0 10px 30px rgba(0,0,0,.35);
-    }
-    @media (prefers-color-scheme: light){
-      :root{ --bg:#ffffff; --fg:#0b1020; --muted:#415072; --card:#f7f9ff; --line:#0b102012 }
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family:Manrope,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
-      background:var(--bg); color:var(--fg); line-height:1.65; -webkit-font-smoothing:antialiased;
-    }
-    img{max-width:100%; height:auto; display:block}
-    a{color:#8ed8ff; text-decoration:none} a:hover{text-decoration:underline}
-    .wrap{max-width:1080px; margin:0 auto; padding:0 var(--wrap)}
+  <!-- ===== CSS (external; create this file) ===== -->
+  <link rel="stylesheet" href="/static/assets/app.css" />
 
-    /* Buttons */
-    .btn{display:inline-flex; align-items:center; gap:.55rem; padding:.9rem 1.2rem; border-radius:999px;
-         background:linear-gradient(90deg,var(--brand),var(--brand2)); color:#001018; font-weight:800; border:0; cursor:pointer; box-shadow:var(--shadow)}
-    .btn.ghost{background:transparent; color:var(--fg); border:1px solid var(--line); box-shadow:none}
-    .btn.link{background:transparent; border:0; padding:0; color:#8ed8ff; box-shadow:none}
-
-    /* Topbar */
-    .topbar{background:linear-gradient(90deg,#0d1432,#0f2148); color:#dce6ff; font-size:.95rem}
-    .topbar .wrap{display:flex; gap:var(--space-2); align-items:center; justify-content:space-between; padding:8px var(--wrap)}
-    @media (max-width:880px){ .topbar .wrap{flex-direction:column; align-items:flex-start} }
-
-    /* Header / Nav */
-    header{position:sticky; top:0; z-index:50; backdrop-filter:saturate(120%) blur(10px); background:#0b1020bf; border-bottom:1px solid var(--line)}
-    .nav{display:flex; align-items:center; gap:var(--space-2); padding:10px 0}
-    .logo{display:flex; align-items:center; gap:.6rem; font-weight:900; color:var(--fg); white-space:nowrap}
-    .logo svg{width:30px; height:30px}
-    .navlinks{display:flex; gap:.6rem; margin-left:auto}
-    .navlinks a{padding:.55rem .8rem; border-radius:10px}
-    .mobile-toggle{display:none}
-    @media (max-width:920px){
-      .mobile-toggle{display:inline-flex; margin-left:auto}
-      .navlinks{position:fixed; inset:auto 0 0 0; top:58px; background:#0b122fd9; backdrop-filter:blur(16px);
-                flex-direction:column; gap:.4rem; padding:16px; transform:translateY(105%); transition:transform .26s ease;
-                max-height:65vh; overflow:auto; border-top:1px solid var(--line)}
-      .navlinks.open{transform:translateY(0)}
-    }
-
-    /* Sections: big breathing room */
-    main section{padding:var(--space-5) 0; border-bottom:1px solid var(--line)}
-    h1{font-size:clamp(1.8rem,4.5vw,2.6rem); line-height:1.18; margin:.4rem 0 var(--space-2)}
-    h2{font-size:clamp(1.35rem,3.2vw,2rem); line-height:1.22; margin:0 0 var(--space-2)}
-    .lead{font-size:clamp(1rem,2.4vw,1.15rem); color:var(--muted); margin:0 0 var(--space-3)}
-    .pill{display:inline-block; border:1px solid var(--line); color:#a6b3d4; border-radius:999px; padding:.35rem .7rem; font-size:.9rem}
-
-    /* Hero */
-    .hero{text-align:center; padding-top:var(--space-4)}
-    .hero .cta{display:flex; gap:.8rem; flex-wrap:wrap; justify-content:center; margin:var(--space-2) 0 var(--space-1)}
-    .hero-img{border-radius:20px; box-shadow:var(--shadow); margin:var(--space-2) auto 0; width:100%; object-fit:cover}
-
-    /* Cards & grids (loose) */
-    .cards{display:grid; gap:16px}
-    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px}
-    .cards.cols-3{grid-template-columns:repeat(3,1fr)}
-    .cards.cols-2{grid-template-columns:repeat(2,1fr)}
-    @media (max-width:980px){ .cards.cols-3{grid-template-columns:1fr 1fr} }
-    @media (max-width:720px){ .cards.cols-3,.cards.cols-2{grid-template-columns:1fr} }
-    .card h3{margin:.2rem 0 .35rem}
-    .muted{color:var(--muted)}
-
-    /* Simple feature list */
-    .features{display:grid; gap:16px; grid-template-columns:1fr 1fr}
-    @media (max-width:820px){ .features{grid-template-columns:1fr} }
-
-    /* Gallery (airy) */
-    .gallery{display:grid; gap:12px; grid-template-columns:repeat(3,1fr)}
-    @media (max-width:980px){ .gallery{grid-template-columns:1fr 1fr} }
-    @media (max-width:560px){ .gallery{grid-template-columns:1fr} }
-    .gitem{border-radius:14px; overflow:hidden; border:1px solid var(--line); background:var(--card)}
-    .gitem figcaption{padding:10px 12px; color:var(--muted); font-size:.95rem}
-
-    /* Forms */
-    .form-grid{display:grid; gap:14px; grid-template-columns:1fr 1fr}
-    @media (max-width:900px){ .form-grid{grid-template-columns:1fr} }
-    .field{display:grid; gap:.35rem}
-    input,select,textarea{
-      width:100%; padding:0.9rem 0.95rem; border-radius:12px; border:1px solid var(--line);
-      background:#0b1230; color:var(--fg); font-size:1rem;
-    }
-    @media (prefers-color-scheme: light){ input,select,textarea{background:#fff; color:#0b1020; border-color:#e3e8f5} }
-    .help{color:var(--muted); font-size:.98rem}
-    .actions{display:flex; gap:.7rem; align-items:center; flex-wrap:wrap}
-
-    /* Footer */
-    footer .grid{display:grid; gap:16px; grid-template-columns:2fr 1fr 1fr 1fr}
-    @media (max-width:980px){ footer .grid{grid-template-columns:1fr 1fr} }
-    footer small{color:var(--muted)}
-    .footer-meta{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-top:1px solid var(--line)}
-    @media (max-width:680px){ .footer-meta{flex-direction:column; gap:8px} }
-
-    /* Sticky helpers */
-    .sticky-cta{position:fixed; right:var(--wrap); bottom:18px; z-index:60}
-    .backtop{position:fixed; right:var(--wrap); bottom:76px; z-index:60; display:none}
-
-    /* Modal (Quick Quote) */
-    .modal{position:fixed; inset:0; background:#0008; display:none; place-items:center; padding:16px; z-index:70}
-    .modal.open{display:grid}
-    .window{width:min(720px,100%); background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow)}
-    .window header{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line)}
-    .window .body{padding:14px}
-
-    /* Toast + Loader */
-    .toast{position:fixed; left:50%; bottom:16px; transform:translateX(-50%); background:#0d173f; color:#fff; padding:.6rem 1rem; border-radius:12px; opacity:0; pointer-events:none; transition:opacity .25s}
-    .toast.show{opacity:1}
-    .loaderfs{position:fixed; inset:0; background:#0007; display:none; place-items:center; z-index:80}
-    .loaderfs.show{display:grid}
-    .spinner{width:42px; height:42px; border-radius:50%; border:4px solid #ffffff40; border-top-color:#fff; animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(1turn)}}
-    @media (prefers-reduced-motion: reduce){ .spinner{animation:none} }
-    .visually-hidden{position:absolute!important; clip:rect(1px,1px,1px,1px); width:1px; height:1px; overflow:hidden; white-space:nowrap}
-  </style>
+  <!-- Social (optional) -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="AMC Spark & Services — Direct Electrical Projects & OEM Supply"/>
+  <meta property="og:description" content="Heavy-load electrical works, T&C, retrofits, AMC, and OEM supply. India-wide execution with compliance and safety."/>
+  <meta property="og:image" content="/Power_Grid_Jamsedpur.jpg"/>
+  <meta name="twitter:card" content="summary_large_image"/>
 </head>
 <body>
   <!-- ===== Topbar ===== -->
-  <div class="topbar">
-    <div class="wrap">
+  <div class="topbar" role="region" aria-label="Announcement">
+    <div class="wrap topbar-inner">
       <div>🔧 Project Desk: <strong>Quote in 24 hours</strong> • 📑 <strong>Tenders welcomed</strong> (GeM & eProcure)</div>
-      <div style="display:flex; gap:.5rem; flex-wrap:wrap">
+      <div class="top-contacts">
         <a class="btn ghost" href="tel:+919220533011">📞 +91 9220533011</a>
         <a class="btn ghost" href="mailto:info@amcspark.com">✉️ info@amcspark.com</a>
       </div>
@@ -147,14 +37,14 @@
   </div>
 
   <!-- ===== Header / Nav ===== -->
-  <header>
+  <header class="header" role="banner">
     <div class="wrap nav">
       <a class="logo" href="#home" aria-label="AMC Spark & Services Home">
         <svg viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#11b5ff"/><stop offset=".7" stop-color="#22c55e"/></linearGradient></defs>
           <path d="M13 2l-10 9h7l-3 11 10-12h-6l2-8z"/>
         </svg>
-        AMC <span style="opacity:.8">Spark</span> & Services
+        AMC <span class="brand-sub">Spark</span> & Services
       </a>
 
       <button id="mobileBtn" class="mobile-toggle btn ghost" aria-label="Open Menu">☰</button>
@@ -163,30 +53,51 @@
         <a href="#services">Services</a>
         <a href="#supply">Supply</a>
         <a href="#projects">Projects</a>
+        <a href="#forms">Forms</a>
         <a href="#contact" class="btn ghost">Contact</a>
-        <button id="themeBtn" class="btn ghost">🌓 Theme</button>
+        <button id="themeBtn" class="btn ghost" type="button" aria-label="Toggle theme">🌓 Theme</button>
       </nav>
     </div>
   </header>
 
+  <!-- ===== Brand Tagline Popup (auto-show on load via JS) ===== -->
+  <div id="brandModal" class="modal" aria-hidden="true" data-autoshow="true">
+    <div class="window" role="dialog" aria-modal="true" aria-labelledby="brandTitle" aria-describedby="brandDesc">
+      <header class="modal-head">
+        <h3 id="brandTitle">⚡ AMC Spark & Services</h3>
+        <button id="closeBrand" class="btn ghost" aria-label="Close">✕</button>
+      </header>
+      <div class="modal-body">
+        <p id="brandDesc" class="lead">
+          “Heavy-load sites. Light-speed delivery.” <br/>
+          <small class="muted">EPC • Retrofits • T&C • AMC • OEM/MRO — Quote in 24 hours.</small>
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="#forms">Start a Quote</a>
+          <a class="btn ghost" href="#projects">See Projects</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== Main ===== -->
   <main id="home">
-    <!-- Hero (lean content) -->
-    <section class="wrap hero" aria-labelledby="h-title">
-      <span class="pill">Direct Projects • Retrofits • AMC • OEM/MRO</span>
-      <h1 id="h-title">Direct Electrical Projects, OEM Supply & Services for Heavy-Load Sites ⚡</h1>
+    <!-- Hero -->
+    <section class="section hero wrap" aria-labelledby="hero-title">
+      <span class="pill">Direct Projects • Retrofits • AMC • OEM/MRO Supply</span>
+      <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy-Load Sites ⚡</h1>
       <p class="lead">EPC, Testing & Commissioning, Retrofits, AMC — <strong>11–66 kV</strong> substations, HT panels, bus ducts, protection & relays, earthing and lightning protection.</p>
       <div class="cta">
-        <a class="btn" href="#project-desk">🚀 Start a Project</a>
-        <button class="btn ghost" id="openQuote">⚡ Quick Quote</button>
+        <a class="btn primary" href="#forms">🚀 Get a Quote</a>
+        <a class="btn ghost" href="#projects">🧷 View Projects</a>
         <a class="btn link" href="#downloads">📄 Download Profile</a>
       </div>
       <img class="hero-img" src="/Power_Grid_Jamsedpur.jpg" alt="Power Grid substation — Jamshedpur, India" width="1200" height="420">
     </section>
 
-    <!-- Services (simplified, airy cards) -->
-    <section id="services" class="wrap" aria-labelledby="s-title">
-      <h2 id="s-title">Services</h2>
+    <!-- Services -->
+    <section id="services" class="section wrap" aria-labelledby="services-title">
+      <h2 id="services-title">Services</h2>
       <div class="cards cols-3">
         <article class="card">
           <h3>Design & Studies</h3>
@@ -202,21 +113,21 @@
         </article>
       </div>
 
-      <div class="features" style="margin-top: var(--space-3)">
-        <div class="card">
+      <div class="features">
+        <article class="card">
           <h3>Testing & Commissioning</h3>
           <p class="muted">Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p>
-        </div>
-        <div class="card">
+        </article>
+        <article class="card">
           <h3>Retrofits & AMC</h3>
           <p class="muted">Relay upgrades, breaker retrofits, planned maintenance, 24×7 support, MTBF/MTTR dashboards.</p>
-        </div>
+        </article>
       </div>
     </section>
 
     <!-- Supply -->
-    <section id="supply" class="wrap" aria-labelledby="sup-title">
-      <h2 id="sup-title">OEM / MRO Supply</h2>
+    <section id="supply" class="section wrap" aria-labelledby="supply-title">
+      <h2 id="supply-title">OEM / MRO Supply</h2>
       <div class="cards cols-2">
         <article class="card"><h3>HT Panels & Relays</h3><p class="muted">VCB/SFU, protection relays, upgrades & commissioning support.</p></article>
         <article class="card"><h3>Transformers & CT/PT</h3><p class="muted">Oil/Dry types, NGR, AVR, accessories and testing.</p></article>
@@ -225,125 +136,46 @@
       </div>
     </section>
 
-    <!-- Projects (no slider = less clutter) -->
-    <section id="projects" class="wrap" aria-labelledby="p-title">
-      <h2 id="p-title">Featured Projects</h2>
+    <!-- Projects -->
+    <section id="projects" class="section wrap" aria-labelledby="projects-title">
+      <h2 id="projects-title">Featured Projects</h2>
       <div class="gallery" aria-live="polite">
-        <figure class="gitem"><img src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" alt="220 kV AIS substation, Andhra Pradesh"><figcaption>220 kV AIS Substation — Andhra Pradesh</figcaption></figure>
-        <figure class="gitem"><img src="/Traction_Substation_at_Simhachalam_01.jpg" alt="Traction substation, Vizag"><figcaption>Traction Substation — Railways (Vizag)</figcaption></figure>
-        <figure class="gitem"><img src="/Power_substation_patigadda.jpg" alt="Urban substation, Hyderabad"><figcaption>Urban Substation — Hyderabad</figcaption></figure>
+        <figure class="gitem"><img src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" alt="220 kV AIS substation, Andhra Pradesh" width="1280" height="720"><figcaption>220 kV AIS Substation — Andhra Pradesh</figcaption></figure>
+        <figure class="gitem"><img src="/Traction_Substation_at_Simhachalam_01.jpg" alt="Traction substation, Vizag" width="1280" height="720"><figcaption>Traction Substation — Railways (Vizag)</figcaption></figure>
+        <figure class="gitem"><img src="/Power_substation_patigadda.jpg" alt="Urban substation, Hyderabad" width="1280" height="720"><figcaption>Urban Substation — Hyderabad</figcaption></figure>
       </div>
     </section>
 
-    <!-- Downloads / Docs -->
-    <section id="downloads" class="wrap" aria-labelledby="d-title">
-      <h2 id="d-title">Capabilities & Documentation</h2>
+    <!-- Downloads -->
+    <section id="downloads" class="section wrap" aria-labelledby="downloads-title">
+      <h2 id="downloads-title">Capabilities & Documentation</h2>
       <div class="cards cols-3">
         <article class="card"><h3>Technical</h3><p class="muted">HT panels, transformers, CT/PT, AVR, bus ducts, cabling, protection & relays, SCADA, SOE, time sync.</p></article>
-        <article class="card"><h3>Quality & Safety</h3><p class="muted">Method statements, ITPs, FAT/SAT, NABL traceability, LOTO, PTW, PPE, tool-box talks.</p></article>
-        <article class="card"><h3>Downloads</h3><p><a class="btn link" href="#">Company Profile (PDF)</a><br><a class="btn link" href="#">Capability Statement (PDF)</a><br><a class="btn link" href="#">HSE Policy (PDF)</a></p></article>
-      </div>
-    </section>
-
-    <!-- Contact -->
-    <section id="contact" class="wrap" aria-labelledby="c-title">
-      <h2 id="c-title">Contact</h2>
-      <div class="cards cols-2">
-        <article class="card">
-          <h3>AMC Spark & Services</h3>
-          <p class="muted">C-7, GF, RPS Palms, Sector 88, Faridabad, Haryana 121002</p>
-          <p class="muted">📞 <a href="tel:+919220533011">+91 9220533011</a><br/>✉️ <a href="mailto:info@amcspark.com">info@amcspark.com</a></p>
-          <div style="border:1px solid var(--line); border-radius:14px; overflow:hidden">
-            <iframe title="Map" width="100%" height="220" loading="lazy" src="https://www.google.com/maps?q=C-7,+GF,+RPS+Palms,+Sector+88,+Faridabad,+Haryana+121002&output=embed" referrerpolicy="no-referrer-when-downgrade"></iframe>
-          </div>
-        </article>
-        <article class="card">
-          <h3>Quick Message</h3>
-          <form id="contactForm" novalidate>
-            <div class="form-grid">
-              <div class="field"><label for="cname">Name *</label><input id="cname" name="name" required></div>
-              <div class="field"><label for="cemail">Email *</label><input id="cemail" name="email" type="email" required></div>
-              <div class="field" style="grid-column:1/-1"><label for="cmsg">Message *</label><textarea id="cmsg" name="message" rows="5" required></textarea></div>
-            </div>
-            <div class="actions" style="margin-top:8px">
-              <button class="btn" type="submit">Send</button><span id="contactStatus" class="help" aria-live="polite"></span>
-            </div>
-            <p class="help" style="margin-top:8px">We reply within 24 hours. For tenders, use Project Desk.</p>
-          </form>
+        <article class="card"><h3>Quality & Safety</h3><p class="muted">Method statements, ITPs, FAT/SAT, NABL traceability, LOTO, PTW, PPE, toolbox talks.</p></article>
+        <article class="card"><h3>Downloads</h3>
+          <p><a class="btn link" href="#">Company Profile (PDF)</a><br>
+             <a class="btn link" href="#">Capability Statement (PDF)</a><br>
+             <a class="btn link" href="#">HSE Policy (PDF)</a></p>
         </article>
       </div>
     </section>
 
-    <!-- Project Desk (short + clean) -->
-    <section id="project-desk" class="wrap" aria-labelledby="pd-title">
-      <h2 id="pd-title">Project Desk — Get a Quote in 24 Hours</h2>
-      <form id="projForm" enctype="multipart/form-data" novalidate>
-        <div class="form-grid">
-          <div class="field"><label for="org">Organisation / Dept *</label><input id="org" name="org" required></div>
-          <div class="field"><label for="name">Contact Name *</label><input id="name" name="name" required></div>
-          <div class="field"><label for="email">Work Email *</label><input id="email" name="email" type="email" required></div>
-          <div class="field"><label for="phone">Phone *</label><input id="phone" name="phone" type="tel" required></div>
-          <div class="field"><label for="location">Site Location *</label><input id="location" name="location" required></div>
-          <div class="field">
-            <label for="ptype">Project Type *</label>
-            <select id="ptype" name="ptype" required>
-              <option value="">Select</option><option>EPC (New)</option><option>Retrofit / Upgrade</option><option>Testing & Commissioning</option><option>AMC / O&M</option><option>Supply Only (OEM/MRO)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="voltage">Load / Voltage Class</label>
-            <select id="voltage" name="voltage">
-              <option value="">Select</option><option>11 kV</option><option>22 kV</option><option>33 kV</option><option>66 kV</option><option>LV</option>
-            </select>
-          </div>
-          <div class="field"><label for="podate">Expected PO / Start</label><input id="podate" name="podate" placeholder="e.g., 6 weeks / by Oct 2025"></div>
-          <div class="field" style="grid-column:1/-1"><label for="files">Upload SOW/SLD/BOQ (PDF/DOCX/ZIP, 50MB)</label><input id="files" name="files" type="file" multiple accept=".pdf,.doc,.docx,.zip"></div>
-          <div class="field" style="grid-column:1/-1"><label for="notes">Notes / Scope Summary</label><textarea id="notes" name="notes" rows="4" placeholder="Brief scope, constraints, preferred OEMs, timelines…"></textarea></div>
-        </div>
-        <div class="actions" style="margin-top:10px">
-          <button class="btn" type="submit">Request Quote</button>
-          <button class="btn ghost" type="button" id="openQuote2">⚡ Quick Quote</button>
-          <span id="projStatus" class="help" aria-live="polite"></span>
-        </div>
-      </form>
-    </section>
-  </main>
+    <!-- ===== COMBINED FORMS (3 tabs → 3 forms) ===== -->
+    <section id="forms" class="section wrap" aria-labelledby="forms-title">
+      <h2 id="forms-title">Get in Touch / Request a Quote</h2>
 
-  <!-- ===== Footer ===== -->
-  <footer class="wrap" style="padding: var(--space-4) 0">
-    <div class="grid" style="margin-bottom: var(--space-3)">
-      <div>
-        <div class="logo" style="margin-bottom:8px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <defs><linearGradient id="g2" x1="0" x2="1"><stop stop-color="#11b5ff"/><stop offset=".7" stop-color="#22c55e"/></linearGradient></defs>
-            <path d="M13 2l-10 9h7l-3 11 10-12h-6l2-8z"/>
-          </svg> AMC <span style="opacity:.8">Spark</span> & Services
-        </div>
-        <p class="help">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy-load sites.</p>
+      <!-- Tabs -->
+      <div class="tabs" role="tablist" aria-label="Forms tabs">
+        <button class="tab active" role="tab" aria-selected="true" aria-controls="pane-qq" id="tab-qq">⚡ Quick Quote</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="pane-contact" id="tab-contact">✉️ Contact</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="pane-project" id="tab-project">📝 Project Desk</button>
       </div>
-      <div><h3>Company</h3><p><a href="#services">Services</a><br><a href="#supply">Supply</a><br><a href="#projects">Projects</a></p></div>
-      <div><h3>Resources</h3><p><a href="#downloads">Downloads</a><br><a href="#project-desk">Project Desk</a></p></div>
-      <div><h3>Reach Us</h3><p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p></div>
-    </div>
-    <div class="footer-meta">
-      <small>© <span id="year"></span> AMC Spark & Services. All rights reserved.</small>
-      <a class="btn ghost" href="#home">Back to top ↑</a>
-    </div>
-  </footer>
 
-  <!-- ===== Sticky / Toast / Loader ===== -->
-  <div class="sticky-cta"><a class="btn" href="#project-desk">Get a Quote</a></div>
-  <a id="backTop" class="btn ghost backtop" href="#home" aria-label="Back to top">↑</a>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <div id="loaderFS" class="loaderfs" aria-hidden="true"><div class="spinner" aria-hidden="true"></div></div>
-
-  <!-- ===== Quick Quote Modal ===== -->
-  <div id="quoteModal" class="modal" aria-hidden="true">
-    <div class="window" role="dialog" aria-modal="true" aria-labelledby="qqTitle">
-      <header><h3 id="qqTitle">Quick Quote</h3><button id="closeQuote" class="btn ghost">✕</button></header>
-      <div class="body">
-        <form id="qqForm" novalidate>
-          <div class="form-grid">
+      <!-- Panes -->
+      <div class="tabpanes">
+        <!-- Quick Quote -->
+        <div class="pane active" id="pane-qq" role="tabpanel" aria-labelledby="tab-qq">
+          <form id="qqForm" class="form-grid" novalidate>
             <div class="field"><label for="qqName">Name *</label><input id="qqName" name="name" required></div>
             <div class="field"><label for="qqEmail">Work Email *</label><input id="qqEmail" name="email" type="email" required></div>
             <div class="field"><label for="qqPhone">Phone *</label><input id="qqPhone" name="phone" type="tel" required></div>
@@ -354,76 +186,135 @@
               </select>
             </div>
             <div class="field"><label for="qqWhen">Expected Start</label><input id="qqWhen" name="when" placeholder="e.g., 6 weeks"></div>
-            <div class="field" style="grid-column:1/-1"><label for="qqNotes">Notes</label><textarea id="qqNotes" name="notes" rows="4" placeholder="Brief scope/constraints"></textarea></div>
-          </div>
-          <div class="actions" style="margin-top:8px"><button class="btn" type="submit">Send</button><span id="qqStatus" class="help" aria-live="polite"></span></div>
-        </form>
+            <div class="field" style="grid-column:1/-1"><label for="qqNotes">Notes</label><textarea id="qqNotes" name="notes" rows="4" placeholder="Brief scope or constraints"></textarea></div>
+            <div class="actions" style="grid-column:1/-1">
+              <button class="btn primary" type="submit">Send</button><span id="qqStatus" class="help" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
+
+        <!-- Contact -->
+        <div class="pane" id="pane-contact" role="tabpanel" aria-labelledby="tab-contact">
+          <form id="contactForm" class="form-grid" novalidate>
+            <div class="field"><label for="cname">Name *</label><input id="cname" name="name" required></div>
+            <div class="field"><label for="cemail">Email *</label><input id="cemail" name="email" type="email" required></div>
+            <div class="field" style="grid-column:1/-1"><label for="cmsg">Message *</label><textarea id="cmsg" name="message" rows="5" required></textarea></div>
+            <div class="actions" style="grid-column:1/-1">
+              <button class="btn primary" type="submit">Send</button><span id="contactStatus" class="help" aria-live="polite"></span>
+            </div>
+            <p class="help" style="grid-column:1/-1">We usually reply within 24 hours. For tenders, attach docs in the Project Desk tab.</p>
+          </form>
+        </div>
+
+        <!-- Project Desk (full) -->
+        <div class="pane" id="pane-project" role="tabpanel" aria-labelledby="tab-project">
+          <form id="projForm" class="form-grid" enctype="multipart/form-data" novalidate>
+            <div class="field"><label for="org">Organisation / Dept *</label><input id="org" name="org" required autocomplete="organization"></div>
+            <div class="field"><label for="name">Contact Name *</label><input id="name" name="name" required autocomplete="name"></div>
+            <div class="field"><label for="email">Work Email *</label><input id="email" name="email" type="email" required autocomplete="email"></div>
+            <div class="field"><label for="phone">Phone *</label><input id="phone" name="phone" type="tel" required autocomplete="tel"></div>
+            <div class="field"><label for="location">Site Location *</label><input id="location" name="location" required></div>
+            <div class="field">
+              <label for="ptype">Project Type *</label>
+              <select id="ptype" name="ptype" required>
+                <option value="">Select</option>
+                <option>EPC (New)</option>
+                <option>Retrofit / Upgrade</option>
+                <option>Testing & Commissioning</option>
+                <option>AMC / O&M</option>
+                <option>Supply Only (OEM/MRO)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="mode">Procurement Mode</label>
+              <select id="mode" name="mode">
+                <option>Direct Purchase</option>
+                <option>Rate Contract</option>
+                <option>Tender / RFP (GeM/eProcure)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="voltage">Load / Voltage Class</label>
+              <select id="voltage" name="voltage">
+                <option value="">Select</option><option>11 kV</option><option>22 kV</option><option>33 kV</option><option>66 kV</option><option>LV</option>
+              </select>
+            </div>
+            <div class="field"><label for="podate">Expected PO / Start</label><input id="podate" name="podate" placeholder="e.g., 6 weeks / by Oct 2025"></div>
+            <div class="field" style="grid-column:1/-1"><label for="files">Upload SOW/SLD/BOQ (PDF/DOCX/ZIP, max 50MB)</label><input id="files" name="files" type="file" multiple accept=".pdf,.doc,.docx,.zip"></div>
+            <div class="field" style="grid-column:1/-1"><label for="notes">Notes / Scope Summary</label><textarea id="notes" name="notes" rows="4" placeholder="Brief scope, constraints, preferred OEMs, timelines…"></textarea></div>
+            <div class="actions" style="grid-column:1/-1">
+              <button class="btn primary" type="submit">Request Quote</button>
+              <span id="projStatus" class="help" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
       </div>
+    </section>
+
+    <!-- Contact block (company info) -->
+    <section id="contact" class="section wrap" aria-labelledby="contact-title">
+      <h2 id="contact-title">Reach Us</h2>
+      <div class="cards cols-2">
+        <article class="card">
+          <h3>AMC Spark & Services</h3>
+          <p class="muted">C-7, GF, RPS Palms, Sector 88, Faridabad, Haryana 121002</p>
+          <p class="muted">📞 <a href="tel:+919220533011">+91 9220533011</a><br/>✉️ <a href="mailto:info@amcspark.com">info@amcspark.com</a></p>
+          <div class="mapbox">
+            <iframe
+              title="AMC Spark & Services — Map"
+              src="https://www.google.com/maps?q=C-7,+GF,+RPS+Palms,+Sector+88,+Faridabad,+Haryana+121002&output=embed"
+              width="100%" height="220" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </article>
+        <article class="card">
+          <h3>Downloads</h3>
+          <p><a class="btn link" href="#">Company Profile (PDF)</a><br>
+             <a class="btn link" href="#">Capability Statement (PDF)</a><br>
+             <a class="btn link" href="#">HSE Policy (PDF)</a></p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="wrap footer" role="contentinfo">
+    <div class="grid4">
+      <div>
+        <div class="logo" style="margin-bottom:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <defs><linearGradient id="g2" x1="0" x2="1"><stop stop-color="#11b5ff"/><stop offset=".7" stop-color="#22c55e"/></linearGradient></defs>
+            <path d="M13 2l-10 9h7l-3 11 10-12h-6l2-8z"/>
+          </svg>
+          AMC <span class="brand-sub">Spark</span> & Services
+        </div>
+        <p class="help">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy-load sites.</p>
+      </div>
+      <div><h4>Company</h4><ul class="list">
+        <li><a href="#services">Services</a></li><li><a href="#supply">Supply</a></li><li><a href="#projects">Projects</a></li></ul></div>
+      <div><h4>Resources</h4><ul class="list">
+        <li><a href="#downloads">Downloads</a></li><li><a href="#forms">Forms</a></li><li><a href="#contact">Contact</a></li></ul></div>
+      <div><h4>Reach Us</h4><p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p></div>
     </div>
-  </div>
 
-  <!-- ===== Scripts (tiny, focus on UX) ===== -->
-  <script>
-    const $ = (s, r=document)=>r.querySelector(s);
-    const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
-    const toast = (m)=>{const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600)};
+    <div class="footer-meta">
+      <small>© <span id="year"></span> AMC Spark & Services. All rights reserved.</small>
+      <a href="#home" class="btn ghost">Back to top ↑</a>
+    </div>
+  </footer>
 
-    // Year
-    $("#year").textContent = new Date().getFullYear();
+  <!-- ===== Sticky helpers / Toast / Loader (markup only; JS will handle) ===== -->
+  <div class="sticky-cta"><a class="btn primary" href="#forms">Get a Quote</a></div>
+  <a id="backTop" class="btn ghost backtop" href="#home" aria-label="Back to top">↑</a>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="loaderFS" class="loaderfs" aria-hidden="true"><div class="spinner" aria-hidden="true"></div></div>
 
-    // Theme toggle (persist)
-    const themeBtn = $("#themeBtn");
-    let mode = localStorage.getItem("amc_theme") || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
-    document.documentElement.dataset.theme = mode;
-    themeBtn?.addEventListener("click",()=>{
-      mode = mode==="dark" ? "light" : "dark";
-      document.documentElement.dataset.theme = mode;
-      localStorage.setItem("amc_theme", mode);
-      toast(`Theme: ${mode}`);
-    });
+  <noscript><div class="wrap" style="padding:10px; text-align:center">JavaScript is disabled. Interactive features are limited.</div></noscript>
 
-    // Mobile nav
-    const mobileBtn = $("#mobileBtn");
-    const navlinks = $("#navlinks");
-    mobileBtn?.addEventListener("click", ()=>{
-      navlinks.classList.toggle("open");
-      mobileBtn.setAttribute("aria-expanded", navlinks.classList.contains("open"));
-    });
-    navlinks?.addEventListener("click",(e)=>{ if(e.target.tagName==="A") navlinks.classList.remove("open"); });
-
-    // Back to top visibility
-    const backTop = $("#backTop"); const showOn = 280;
-    addEventListener("scroll", ()=>{ backTop.style.display = scrollY>showOn ? "inline-flex":"none"; }, {passive:true});
-
-    // Loader control for forms
-    const block = (on=true)=>$("#loaderFS").classList.toggle("show", on);
-
-    // Generic form handler (hook your Flask endpoints later)
-    const handle = (form, statusEl, ok="Received — we’ll revert in 24h.")=>{
-      form?.addEventListener("submit", async (e)=>{
-        e.preventDefault();
-        if(!form.checkValidity()){ form.reportValidity(); return; }
-        block(true);
-        try{
-          // TODO: replace with fetch('/api/endpoint', {method:'POST', body:FormData})...
-          await new Promise(r=>setTimeout(r, 700));
-          statusEl.textContent = ok; toast("Sent ✅"); form.reset();
-        }catch{ statusEl.textContent = "Failed. Try again."; toast("Failed ❌"); }
-        finally{ block(false); }
-      });
-    };
-    handle($("#contactForm"), $("#contactStatus"), "Thanks! We’ll reply soon.");
-    handle($("#projForm"), $("#projStatus"), "Request received — check your email.");
-    handle($("#qqForm"), $("#qqStatus"), "Got it — we’ll revert in 24h.");
-
-    // Quick Quote modal
-    const modal = $("#quoteModal");
-    const openQuote = ()=>modal.classList.add("open");
-    const closeQuote = ()=>modal.classList.remove("open");
-    $("#openQuote")?.addEventListener("click", openQuote);
-    $("#openQuote2")?.addEventListener("click", openQuote);
-    $("#closeQuote")?.addEventListener("click", closeQuote);
-    modal?.addEventListener("click",(e)=>{ if(e.target===modal) closeQuote(); });
-  </script>
+  <!-- ===== JS (external; create this file) ===== -->
+  <!-- Your /static/assets/app.js should: 
+       - handle theme toggle, mobile drawer, back-to-top, brandModal autoshow
+       - wire up tabs (#tab-qq, #tab-contact, #tab-project) to show/hide panes
+       - handle forms submit (qqForm, contactForm, projForm) -->
+  <script src="/static/assets/app.js" defer></script>
 </body>
 </html>
