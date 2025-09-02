@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AMC Spark — Admin Login</title>
+
+  <!-- No-store to avoid caching around auth redirects -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="robots" content="noindex,nofollow">
+
+  <link rel="stylesheet" href="/static/assets/app.css">
+  <style>
+    :root{--ink:#0f172a;--muted:#64748b;--bg:#0b1020;--panel:#0f172a;--line:#1f2f49;--brand:#11b5ff;--brand2:#22c55e}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb;margin:0}
+    .wrap{max-width:460px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(2,6,23,.35)}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);margin:0 0 10px}
+    .field{display:grid;gap:6px;margin:10px 0}
+    input{background:#0b1226;border:1px solid var(--line);border-radius:10px;padding:12px;color:#e5e7eb}
+    .btn{display:inline-block;background:linear-gradient(90deg,var(--brand),var(--brand2));color:#00121b;font-weight:800;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+    small{color:#93a3bf}
+    .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .top svg{width:28px;height:28px}
+  </style>
+</head>
+<body data-page="admin-login">
+  <div class="wrap">
+    <div class="top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#11b5ff"/><stop offset=".7" stop-color="#22c55e"/></linearGradient></defs>
+        <path d="M13 2l-10 9h7l-3 11 10-12h-6l2-8z"/>
+      </svg>
+      <h1>Admin Login</h1>
+    </div>
+    <p class="sub">Enter credentials to access the dashboard.</p>
+    <form method="post" action="/admin/login" autocomplete="on">
+      <div class="field">
+        <label for="user">User</label>
+        <input id="user" name="user" autocomplete="username" autofocus required>
+      </div>
+      <div class="field">
+        <label for="pass">Password</label>
+        <input id="pass" name="pass" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn" type="submit">Login</button>
+      <div style="margin-top:10px">
+        <small>Tip: set <code>ADMIN_USER</code>, <code>ADMIN_PASS</code>, and <code>SECRET_KEY</code> in .env</small>
+      </div>
+    </form>
+  </div>
+
+  <!-- IMPORTANT: don't include /static/assets/admin.js on the login page -->
+</body>
+</html>

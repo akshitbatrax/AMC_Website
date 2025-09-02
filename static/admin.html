@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AMC Spark — Admin Ticket Dashboard</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/static/assets/admin.css" />
+  <!-- (optional) site-wide css -->
+  <link rel="stylesheet" href="/static/assets/app.css" />
+
+  <!-- Charts -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- App JS -->
+  <script defer src="/static/assets/admin.js"></script>
+</head>
+<body>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="wrap bar">
+      <div class="brand"><strong>⚡ AMC Spark</strong> <span class="pill">Admin Dashboard</span></div>
+      <div class="api">
+        <button class="btn ghost" id="themeToggle" title="Toggle theme">🌓</button>
+        <a href="/admin/logout" class="btn ghost">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash">
+    <!-- Sidebar -->
+    <aside class="side">
+      <nav class="menu">
+        <button class="item active" data-tab="overview">📊 Overview</button>
+        <button class="item" data-tab="kanban">🧩 Kanban</button>
+        <button class="item" data-tab="table">📋 Table</button>
+        <button class="item" data-tab="analytics">📈 Analytics</button>
+        <div class="sep"></div>
+        <button class="item" id="exportCsv">⬇️ Export CSV</button>
+        <button class="item" id="refreshBtn">🔄 Refresh</button>
+      </nav>
+
+      <div class="filters">
+        <h4>Filters</h4>
+        <input id="q" placeholder="Search tickets…" />
+        <select id="kind">
+          <option value="">All Types</option>
+          <option>Contact</option>
+          <option>Quick Quote</option>
+          <option>Project Desk</option>
+        </select>
+        <select id="status">
+          <option value="">All Status</option>
+          <option value="open">Open</option>
+          <option value="wip">WIP</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <label class="small">
+          <input type="checkbox" id="autoRefresh" checked />
+          Auto-refresh (30s)
+        </label>
+      </div>
+
+      <div class="legend">
+        <div><span class="dot open"></span>Open</div>
+        <div><span class="dot wip"></span>WIP</div>
+        <div><span class="dot resolved"></span>Resolved</div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Overview -->
+      <section class="tab show" id="tab-overview">
+        <div class="cards kpis">
+          <div class="kpi card"><div class="lab">Total</div><div class="num" id="kTotal">0</div></div>
+          <div class="kpi card"><div class="lab">Open</div><div class="num" id="kOpen">0</div></div>
+          <div class="kpi card"><div class="lab">WIP</div><div class="num" id="kWip">0</div></div>
+          <div class="kpi card"><div class="lab">Resolved</div><div class="num" id="kRes">0</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title">Volume — Last 14 days</h3>
+            <canvas id="cTrend" height="180"></canvas>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Types</h3>
+            <canvas id="cTypes" height="180"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Status Split</h3>
+          <canvas id="cStatus" height="160"></canvas>
+        </div>
+      </section>
+
+      <!-- Kanban -->
+      <section class="tab" id="tab-kanban">
+        <div class="kanban">
+          <div class="col" data-col="open">
+            <header>Open <span class="badge" id="cOpen">0</span></header>
+            <div class="lane" id="lane-open"></div>
+          </div>
+          <div class="col" data-col="wip">
+            <header>WIP <span class="badge" id="cWip">0</span></header>
+            <div class="lane" id="lane-wip"></div>
+          </div>
+          <div class="col" data-col="resolved">
+            <header>Resolved <span class="badge" id="cResolved">0</span></header>
+            <div class="lane" id="lane-resolved"></div>
+          </div>
+        </div>
+        <p class="help" style="margin-top:10px">Tip: Drag a card to change status. Changes are saved instantly.</p>
+      </section>
+
+      <!-- Table -->
+      <section class="tab" id="tab-table">
+        <div class="table-tools">
+          <div class="left">
+            <button class="btn ghost" id="bulkOpen">Mark Open</button>
+            <button class="btn ghost" id="bulkWip">Mark WIP</button>
+            <button class="btn ghost" id="bulkResolved">Mark Resolved</button>
+          </div>
+          <div class="right small">Sorted by <span id="sortLabel">Time (newest)</span></div>
+        </div>
+        <div class="table" id="grid"></div>
+      </section>
+
+      <!-- Analytics -->
+      <section class="tab" id="tab-analytics">
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title">Kind × Status</h3>
+            <canvas id="cKindStatus" height="200"></canvas>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Hourly Heatmap (UTC)</h3>
+            <div id="heatmap" class="heat"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Drawer -->
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <div class="ticket-id" id="dTicket">—</div>
+        <div class="muted" id="dMeta">—</div>
+      </div>
+      <button class="btn ghost" id="dClose" title="Close">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="field">
+        <label>Status</label>
+        <select id="dStatus">
+          <option value="open">Open</option>
+          <option value="wip">WIP</option>
+          <option value="resolved">Resolved</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Remark</label>
+        <textarea id="dNote" rows="3" placeholder="Internal/Client remark…"></textarea>
+      </div>
+
+      <div class="field" style="align-items:start">
+        <label class="small">
+          <input type="checkbox" id="dEmail" />
+          Email this remark to client
+        </label>
+        <input id="dSubject" placeholder="Email subject (optional)" style="margin-top:8px" disabled />
+      </div>
+
+      <button class="btn primary" id="dSave">Save</button>
+
+      <h4 style="margin-top:18px">Fields</h4>
+      <div id="dFields" class="kv"></div>
+
+      <h4 style="margin-top:18px">Attachments</h4>
+      <div id="dFiles" class="files"></div>
+
+      <h4 style="margin-top:18px">History</h4>
+      <div id="dHist" class="small muted"></div>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast"></div>
+</body>
+</html>
