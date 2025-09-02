@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- =========================================================
+  PART 1 — HEAD + CRITICAL CSS (mobile-first, single-file)
+========================================================= -->
 <head>
-  <!-- ==== Meta / SEO ==== -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AMC Spark & Services — Direct Electrical Projects, OEM Supply & Services (11–66 kV)</title>
   <meta name="description" content="Direct electrical projects, EPC, testing & commissioning, retrofits, AMC, and OEM/MRO supply for heavy-load industrial, infrastructure and utilities. Quote in 24 hours." />
   <link rel="canonical" href="https://www.amcspark.com/"/>
@@ -21,39 +23,139 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 
-  <!-- JSON-LD -->
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"Organization","name":"AMC Spark & Services","url":"https://www.amcspark.com/","logo":"/logo.png","email":"info@amcspark.com","telephone":"+91-9220533011","address":{"@type":"PostalAddress","streetAddress":"Room 001, C-7, Ground Floor","addressCountry":"IN"},"hasMap":"https://maps.app.goo.gl/RoAQtTmxBF8ZhkEg9","sameAs":[]}
-  </script>
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.amcspark.com/"},{"@type":"ListItem","position":2,"name":"Services","item":"https://www.amcspark.com/#services"},{"@type":"ListItem","position":3,"name":"Project Desk","item":"https://www.amcspark.com/#project-desk"}]}
-  </script>
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-    {"@type":"Question","name":"Do you handle direct projects and supply?","acceptedAnswer":{"@type":"Answer","text":"Yes. We execute direct projects, rate contracts, tenders (GeM/eProcure), and OEM supply & services—whether via tender or direct PO."}},
-    {"@type":"Question","name":"Which voltage classes do you cover?","acceptedAnswer":{"@type":"Answer","text":"LV to EHV: 11kV, 22kV, 33kV and 66kV—HT panels, transformers, bus ducts, relays, earthing and lightning protection."}},
-    {"@type":"Question","name":"What compliance and safety framework do you follow?","acceptedAnswer":{"@type":"Answer","text":"CEIG, IS/IEC, OSHA-aligned safety, and NABL-traceable calibration. We deliver ITPs, FAT/SAT, method statements, and as-built documentation."}}
-  ]}
-  </script>
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"HowTo","name":"Project Intake & Delivery Process","step":[
-    {"@type":"HowToStep","name":"Share Scope","text":"Upload SOW/SLD/BOQ and site details via Project Desk."},
-    {"@type":"HowToStep","name":"Clarify & Quote","text":"Receive clarifications and a quote within 24 hours."},
-    {"@type":"HowToStep","name":"Planning","text":"ITP, method statements, resource plan and schedule."},
-    {"@type":"HowToStep","name":"Execute","text":"Site mobilisation, installation, testing & commissioning."},
-    {"@type":"HowToStep","name":"Handover","text":"As-builts, CEIG support, O&M manuals, red-lines."},
-    {"@type":"HowToStep","name":"Maintain","text":"AMC / O&M with digital health reports."}
-  ]}
-  </script>
+  <!-- JSON-LD (unchanged; valid inlined) -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"AMC Spark & Services","url":"https://www.amcspark.com/","logo":"/logo.png","email":"info@amcspark.com","telephone":"+91-9220533011","address":{"@type":"PostalAddress","streetAddress":"Room 001, C-7, Ground Floor","addressCountry":"IN"},"hasMap":"https://maps.app.goo.gl/RoAQtTmxBF8ZhkEg9","sameAs":[]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.amcspark.com/"},{"@type":"ListItem","position":2,"name":"Services","item":"https://www.amcspark.com/#services"},{"@type":"ListItem","position":3,"name":"Project Desk","item":"https://www.amcspark.com/#project-desk"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do you handle direct projects and supply?","acceptedAnswer":{"@type":"Answer","text":"Yes. We execute direct projects, rate contracts, tenders (GeM/eProcure), and OEM supply & services—whether via tender or direct PO."}},{"@type":"Question","name":"Which voltage classes do you cover?","acceptedAnswer":{"@type":"Answer","text":"LV to EHV: 11kV, 22kV, 33kV and 66kV—HT panels, transformers, bus ducts, relays, earthing and lightning protection."}},{"@type":"Question","name":"What compliance and safety framework do you follow?","acceptedAnswer":{"@type":"Answer","text":"CEIG, IS/IEC, OSHA-aligned safety, and NABL-traceable calibration. We deliver ITPs, FAT/SAT, method statements, and as-built documentation."}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"HowTo","name":"Project Intake & Delivery Process","step":[{"@type":"HowToStep","name":"Share Scope","text":"Upload SOW/SLD/BOQ and site details via Project Desk."},{"@type":"HowToStep","name":"Clarify & Quote","text":"Receive clarifications and a quote within 24 hours."},{"@type":"HowToStep","name":"Planning","text":"ITP, method statements, resource plan and schedule."},{"@type":"HowToStep","name":"Execute","text":"Site mobilisation, installation, testing & commissioning."},{"@type":"HowToStep","name":"Handover","text":"As-builts, CEIG support, O&M manuals, red-lines."},{"@type":"HowToStep","name":"Maintain","text":"AMC / O&M with digital health reports."}]}</script>
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="/static/assets/app.css">
+  <style>
+    :root{
+      --bg:#0b1020;--fg:#eaf0ff;--muted:#9fb2d0;--glass:#0f1530cc;--card:#121833;--brand:#11b5ff;--brand2:#22c55e;--accent:#72e6ff;
+      --shadow:0 8px 24px rgba(0,0,0,.32); --radius:16px; --wrap:clamp(16px,5vw,28px);
+    }
+    @media (prefers-color-scheme: light){ :root{ --bg:#ffffff; --fg:#0b1020; --muted:#3b4560; --glass:#ffffffcc; --card:#f6f8ff; } }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Manrope,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+    img{max-width:100%;height:auto;display:block}
+    .wrap{max-width:1120px;margin:0 auto;padding:0 var(--wrap)}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1rem;border-radius:999px;border:1px solid transparent;background:var(--brand);color:#001018;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
+    .btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand2))}
+    .btn.ghost{background:transparent;border-color:#3b456080;color:var(--fg);box-shadow:none}
+    .btn.link{background:transparent;border:0;padding:0;font-weight:700}
+    .pill{display:inline-block;border:1px solid #3b456040;border-radius:999px;padding:.35rem .6rem;font-size:.85rem;color:var(--muted)}
+    .topbar{background:linear-gradient(90deg,#0d1330,#102048);color:#dce6ff;font-size:.9rem}
+    .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.5rem var(--wrap)}
+    header.header{position:sticky;top:0;z-index:50;background:rgba(10,14,28,.7);backdrop-filter:saturate(120%) blur(10px);border-bottom:1px solid #ffffff14}
+    .nav{display:flex;align-items:center;gap:1rem;padding:.6rem 0}
+    .logo{display:flex;align-items:center;gap:.6rem;font-weight:900;color:var(--fg);white-space:nowrap}
+    .logo svg{width:28px;height:28px}
+    .brand-sub{opacity:.8}
+    .navlinks{display:flex;gap:.8rem;align-items:center;margin-left:auto}
+    .navlinks a{padding:.5rem .7rem;border-radius:10px}
+    .mobile-toggle{display:none}
+    .theme{margin-left:.4rem}
+    /* Mobile nav */
+    @media (max-width: 880px){
+      .mobile-toggle{display:inline-flex;margin-left:auto}
+      .navlinks{position:fixed;inset:auto 0 0 0;top:56px;background:var(--glass);backdrop-filter:blur(16px);flex-direction:column;padding:1rem;transform:translateY(105%);transition:transform .26s ease;max-height:60vh;overflow:auto}
+      .navlinks.open{transform:translateY(0)}
+      .topbar .wrap{flex-direction:column;align-items:flex-start}
+    }
+    /* Sections */
+    main section{padding:40px 0;border-bottom:1px solid #ffffff12}
+    h1,h2{line-height:1.2;margin:.4rem 0 .8rem}
+    h1{font-size:clamp(1.6rem,3.8vw,2.4rem)}
+    h2{font-size:clamp(1.2rem,3vw,1.8rem)}
+    p.help{color:var(--muted);margin:.3rem 0 .8rem}
+    /* Hero */
+    .hero{position:relative;isolation:isolate;text-align:center;padding-top:18px}
+    .hero .cta{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin:12px 0 4px}
+    .hero-img{border-radius:var(--radius);box-shadow:var(--shadow);margin:12px auto 0;width:100%;height:auto;object-fit:cover}
+    /* Tabs & cards */
+    .tabs{display:flex;gap:.4rem;flex-wrap:wrap}
+    .tab{padding:.6rem .9rem;border-radius:999px;border:1px solid #3b45604d;background:transparent;color:var(--fg);cursor:pointer}
+    .tab.active{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#001018;border-color:transparent}
+    .tabpanes .pane{display:none}
+    .tabpanes .pane.active{display:block}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .cards.two-col{grid-template-columns:repeat(2,1fr)}
+    .card{background:var(--card);border:1px solid #ffffff10;border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+    .card .tag{font-size:.75rem;color:var(--muted)}
+    @media (max-width: 900px){ .cards{grid-template-columns:1fr} .cards.two-col{grid-template-columns:1fr} }
+    /* Stats */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .stat{background:var(--card);padding:14px;border-radius:14px;text-align:center;border:1px solid #ffffff10}
+    .stat .num{font-size:clamp(1.6rem,5vw,2.2rem);font-weight:800}
+    .stat .lab{color:var(--muted)}
+    @media (max-width: 820px){ .stats{grid-template-columns:repeat(2,1fr)} }
+    /* Carousel */
+    .carousel{position:relative}
+    .viewport{overflow:hidden;border-radius:14px}
+    .track{display:flex;transition:transform .4s ease;will-change:transform}
+    .slide{min-width:100%;position:relative}
+    .slide .meta{position:absolute;left:8px;bottom:8px;background:#0009;color:#fff;padding:.35rem .6rem;border-radius:10px;font-size:.8rem}
+    .navbtn{position:absolute;top:50%;transform:translateY(-50%);background:#0009;border:0;color:#fff;padding:.5rem .7rem;border-radius:999px}
+    .navbtn.prev{left:8px} .navbtn.next{right:8px}
+    /* Gallery */
+    .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .gitem{background:var(--card);border:1px solid #ffffff10;border-radius:12px;overflow:hidden}
+    .gitem figcaption{padding:.5rem .7rem;color:var(--muted)}
+    @media (max-width: 900px){ .gallery{grid-template-columns:1fr 1fr} }
+    @media (max-width: 560px){ .gallery{grid-template-columns:1fr} }
+    /* Contact & forms */
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field{display:grid;gap:.35rem;margin:.45rem 0}
+    input,select,textarea{width:100%;padding:.7rem .8rem;border-radius:10px;border:1px solid #3b456033;background:#0b1230;color:var(--fg)}
+    input::placeholder,textarea::placeholder{color:#9fb2d0a6}
+    @media (prefers-color-scheme: light){ input,select,textarea{background:#fff;color:#0b1020;border-color:#d6def0} }
+    @media (max-width: 900px){ .cols{grid-template-columns:1fr} }
+    /* Map box */
+    .mapbox iframe{border-radius:12px;box-shadow:var(--shadow)}
+    /* Footer */
+    .footer .grid4{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px}
+    .footer .list{list-style:none;padding:0;margin:0}
+    .footer .list li{margin:.35rem 0}
+    .footer-meta{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #ffffff10;padding:.8rem 0;margin-top:8px;color:var(--muted)}
+    @media (max-width: 900px){ .footer .grid4{grid-template-columns:1fr 1fr} .footer-meta{flex-direction:column;gap:.5rem} }
+    /* Sticky & helpers */
+    .sticky-cta{position:fixed;inset:auto var(--wrap) 16px auto;z-index:60}
+    .backtop{position:fixed;right:var(--wrap);bottom:78px;z-index:60}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111b40;color:#fff;padding:.6rem 1rem;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s}
+    .toast.show{opacity:1}
+    /* Modal */
+    .modal{position:fixed;inset:0;background:#0008;display:none;place-items:center;padding:16px;z-index:70}
+    .modal.open{display:grid}
+    .modal .window{width:min(720px,100%);background:var(--card);border:1px solid #ffffff10;border-radius:16px;box-shadow:var(--shadow)}
+    .modal .head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #ffffff10}
+    .modal .window .cards.two-col{padding:14px}
+    /* Command palette */
+    .overlay{position:fixed;inset:0;background:#0006;display:none;place-items:center;padding:20px;z-index:75}
+    .overlay.open{display:grid}
+    .overlay .palette{width:min(720px,100%);background:var(--card);border:1px solid #ffffff10;border-radius:14px}
+    .overlay header{padding:8px 10px;border-bottom:1px solid #ffffff10}
+    .overlay input{width:100%;padding:.8rem;border-radius:10px;border:1px solid #3b456033;background:#0b1230;color:var(--fg)}
+    #palList{list-style:none;margin:0;padding:10px;max-height:50vh;overflow:auto}
+    /* Full-screen loader */
+    .loaderfs{position:fixed;inset:0;background:#0008;display:none;place-items:center;z-index:90}
+    .loaderfs.show{display:grid}
+    .loader-card{background:#0f1330;border:1px solid #ffffff1a;border-radius:16px;padding:18px 22px;display:grid;gap:10px;place-items:center;min-width:240px}
+    .loader-ring{width:36px;height:36px;border-radius:50%;border:3px solid #ffffff30;border-top-color:#fff;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(1turn)}}
+    @media (prefers-reduced-motion: reduce){
+      .track{transition:none} .loader-ring{animation:none}
+    }
+    .visually-hidden{position:absolute!important;clip:rect(1px,1px,1px,1px);padding:0;border:0;height:1px;width:1px;overflow:hidden}
+  </style>
 </head>
-<body>
-<div id="scrollbar" aria-hidden="true"></div>
-<div class="page">
 
-  <!-- Top bar -->
+<!-- ======================================
+  PART 2 — BODY SHELL (topbar, header/nav)
+====================================== -->
+<body>
+<div class="page">
   <div class="topbar" role="region" aria-label="Announcement">
     <div class="wrap">
       <div>🔧 Project Desk: <strong>Quote in 24 hours</strong> • 📑 <strong>Tenders welcomed</strong> (GeM & eProcure)</div>
@@ -64,7 +166,6 @@
     </div>
   </div>
 
-  <!-- Header / Nav -->
   <header class="header" role="banner">
     <div class="wrap nav">
       <a href="#home" class="logo" aria-label="AMC Spark & Services Home">
@@ -74,7 +175,9 @@
         </svg>
         AMC <span class="brand-sub">Spark</span> & Services
       </a>
+
       <button class="mobile-toggle btn ghost" aria-label="Open Menu" id="mobileMenuBtn">☰</button>
+
       <nav class="navlinks" id="navlinks" aria-label="Primary">
         <a href="#services">Services</a>
         <a href="#supply">Supply</a>
@@ -85,15 +188,17 @@
         <a href="#project-desk">Project Desk</a>
         <a href="#contact" class="btn ghost">Contact</a>
       </nav>
-      <button id="themeBtn" class="theme" aria-label="Toggle theme">🌓 Theme</button>
+
+      <button id="themeBtn" class="btn ghost theme" aria-label="Toggle theme">🌓 Theme</button>
     </div>
   </header>
 
-  <!-- Main -->
+  <!-- ======================================
+    PART 3 — MAIN CONTENT (hero → forms)
+  ====================================== -->
   <main id="main">
     <!-- Hero -->
     <section class="hero wrap" id="home" aria-labelledby="hero-title">
-      <canvas id="sparkCanvas" aria-hidden="true"></canvas>
       <span class="pill">Direct Projects • Retrofits • AMC • OEM/MRO Supply</span>
       <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy-Load Sites ⚡</h1>
       <p>
@@ -108,7 +213,7 @@
         <a class="btn link" href="#downloads">📄 Download Profile →</a>
       </div>
       <img src="/Power_Grid_Jamsedpur.jpg" width="1200" height="420" alt="Power Grid substation — Jamshedpur, India" class="hero-img">
-      <div class="badges" aria-label="Sectors">
+      <div class="badges" aria-label="Sectors" style="margin-top:8px;display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center">
         <span class="pill">🏭 Industrial</span>
         <span class="pill">🛣️ Infrastructure</span>
         <span class="pill">⚙️ Utilities</span>
@@ -121,47 +226,47 @@
       <h2 id="services-title">Services</h2>
       <p class="help">Pick a category to explore deliverables and scope. Tip: press <strong>Ctrl/Cmd + K</strong> to jump anywhere.</p>
       <div class="tabs" role="tablist" aria-label="Services tabs">
-        <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-epc" id="t-epc">EPC (Substations 11–66 kV)</button>
+        <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-epc" id="t-epc">EPC (11–66 kV)</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="tab-tc" id="t-tc">Testing & Commissioning</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="tab-retro" id="t-retro">Retrofits & Upgrades</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="tab-amc" id="t-amc">AMC / O&M</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-audit" id="t-audit">Power Quality & Compliance</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="tab-audit" id="t-audit">Power Quality</button>
       </div>
 
       <div class="tabpanes">
         <div class="pane active" id="tab-epc" role="tabpanel" aria-labelledby="t-epc">
           <div class="cards">
-            <article class="card reveal"><span class="tag">Design</span><h3>SLD & System Studies</h3><p>Load list, short-circuit, protection coordination, earthing grid and lightning protection layout.</p></article>
-            <article class="card reveal"><span class="tag">Build</span><h3>HT Panels, Transformers, Bus Ducts</h3><p>Supply/installation, cable routing, terminations, rising mains, SCADA & time sync.</p></article>
-            <article class="card reveal"><span class="tag">Handover</span><h3>Documentation & CEIG Support</h3><p>Method statements, ITPs, FAT/SAT, red-lines, as-builts, O&M manuals and CEIG coordination.</p></article>
+            <article class="card"><span class="tag">Design</span><h3>SLD & System Studies</h3><p>Load list, short-circuit, relay coordination, earthing grid & lightning layout.</p></article>
+            <article class="card"><span class="tag">Build</span><h3>HT Panels, Transformers, Bus Ducts</h3><p>Supply/installation, cable routing, terminations, SCADA & time sync.</p></article>
+            <article class="card"><span class="tag">Handover</span><h3>Docs & CEIG Support</h3><p>Method statements, ITPs, FAT/SAT, red-lines, O&M and CEIG coordination.</p></article>
           </div>
         </div>
         <div class="pane" id="tab-tc" role="tabpanel" aria-labelledby="t-tc">
           <div class="cards">
-            <article class="card reveal"><span class="tag">Primary</span><h3>Primary Injection & Hi-Pot/VLF</h3><p>Primary injection, HV tests, IR/PI, contact resistance, CT/PT polarity and ratio checks.</p></article>
-            <article class="card reveal"><span class="tag">Secondary</span><h3>Protection & Relay Settings</h3><p>OC/EF, differential, distance protection, SOE verification and end-to-end trip checks.</p></article>
-            <article class="card reveal"><span class="tag">Reports</span><h3>NABL-Traceable Measurements</h3><p>Calibrated instruments with traceable certificates and digitally signed reports.</p></article>
+            <article class="card"><span class="tag">Primary</span><h3>Primary Injection & HV Tests</h3><p>IR/PI, contact resistance, CT/PT polarity and ratio checks.</p></article>
+            <article class="card"><span class="tag">Secondary</span><h3>Protection & Relays</h3><p>Differential, distance, OC/EF, SOE verification, end-to-end trip checks.</p></article>
+            <article class="card"><span class="tag">Reports</span><h3>NABL-Traceable</h3><p>Calibrated instruments with traceability and signed reports.</p></article>
           </div>
         </div>
         <div class="pane" id="tab-retro" role="tabpanel" aria-labelledby="t-retro">
           <div class="cards">
-            <article class="card reveal"><span class="tag">Shutdown</span><h3>Legacy Gear Replacement</h3><p>Panel/relay upgrades, bus duct re-routing, cable derating studies, and staged cutover plans.</p></article>
-            <article class="card reveal"><span class="tag">Reliability</span><h3>Protection Coordination</h3><p>Discrimination studies, fault clearing times, arc flash review and mitigation actions.</p></article>
-            <article class="card reveal"><span class="tag">Modernize</span><h3>Automation & SCADA</h3><p>SOE, time-sync (IRIG-B/NTP), remote monitoring and alarm rationalization.</p></article>
+            <article class="card"><span class="tag">Shutdown</span><h3>Legacy Replacement</h3><p>Relay upgrades, breaker retrofits, staged cutover plans.</p></article>
+            <article class="card"><span class="tag">Reliability</span><h3>Protection Coordination</h3><p>Discrimination, clearing times, arc flash review & mitigation.</p></article>
+            <article class="card"><span class="tag">Modernize</span><h3>Automation & SCADA</h3><p>SOE, time-sync (IRIG-B/NTP), remote monitoring, alarm rationalization.</p></article>
           </div>
         </div>
         <div class="pane" id="tab-amc" role="tabpanel" aria-labelledby="t-amc">
           <div class="cards">
-            <article class="card reveal"><span class="tag">Preventive</span><h3>Planned Maintenance</h3><p>Calendar PM, lubrication, torque checks, breaker timing, thermal scans and reports.</p></article>
-            <article class="card reveal"><span class="tag">Corrective</span><h3>24×7 Support</h3><p>Breakdown response, spares strategy, vendor coordination and root cause analysis.</p></article>
-            <article class="card reveal"><span class="tag">Insights</span><h3>Digital Health Reports</h3><p>Asset health dashboards, incident logs, MTBF/MTTR and improvement actions.</p></article>
+            <article class="card"><span class="tag">Preventive</span><h3>Planned Maintenance</h3><p>Torque checks, breaker timing, thermal scans, reports.</p></article>
+            <article class="card"><span class="tag">Corrective</span><h3>24×7 Support</h3><p>Breakdown response, spares strategy, RCA.</p></article>
+            <article class="card"><span class="tag">Insights</span><h3>Digital Health</h3><p>MTBF/MTTR, dashboards and improvement actions.</p></article>
           </div>
         </div>
         <div class="pane" id="tab-audit" role="tabpanel" aria-labelledby="t-audit">
           <div class="cards">
-            <article class="card reveal"><span class="tag">Power Quality</span><h3>Harmonics & PF</h3><p>Harmonic analysis, PF correction, load balancing, capacitor bank optimisation.</p></article>
-            <article class="card reveal"><span class="tag">Safety</span><h3>Earthing & Lightning</h3><p>Soil resistivity, earthing grid tests, surge protection placement and test certificates.</p></article>
-            <article class="card reveal"><span class="tag">Compliance</span><h3>Documentation Packs</h3><p>CEIG-ready dossiers, checklists, method statements and calibration certificates.</p></article>
+            <article class="card"><span class="tag">Power Quality</span><h3>Harmonics & PF</h3><p>Harmonic analysis, PF correction, balancing.</p></article>
+            <article class="card"><span class="tag">Safety</span><h3>Earthing & Lightning</h3><p>Soil resistivity, grid tests, surge placement.</p></article>
+            <article class="card"><span class="tag">Compliance</span><h3>Docs Packs</h3><p>CEIG-ready dossiers, checklists, calibration certs.</p></article>
           </div>
         </div>
       </div>
@@ -170,74 +275,50 @@
     <!-- CT/PT Helper -->
     <section class="section wrap" id="ctpt" aria-labelledby="ctpt-title">
       <h2 id="ctpt-title">CT / PT Helper 🧮</h2>
-      <p class="help">Fast sanity checks for field engineers. (Always validate with detailed calculations & OEM charts.)</p>
-      <div class="ctpt">
-        <div class="field">
-          <label for="ctRatio">CT Ratio (e.g., 400/5)</label>
-          <input id="ctRatio" placeholder="400/5">
+      <p class="help">Quick sanity checks for field engineers. (Validate with OEM charts.)</p>
+      <div class="cards two-col">
+        <div class="card">
+          <div class="field"><label for="ctRatio">CT Ratio (e.g., 400/5)</label><input id="ctRatio" placeholder="400/5"></div>
+          <div class="field"><label for="secCurrent">Secondary Current (A)</label><input id="secCurrent" type="number" step="0.01" placeholder="e.g., 2.4"></div>
+          <div class="field"><label for="burden">Burden (VA)</label><input id="burden" type="number" step="0.1" placeholder="e.g., 10"></div>
+          <div class="field"><div class="pill" id="ctptOut">Tip: Keep CT loading within class limits.</div></div>
         </div>
-        <div class="field">
-          <label for="secCurrent">Secondary Current (A)</label>
-          <input id="secCurrent" type="number" step="0.01" placeholder="e.g., 2.4">
+        <div class="card">
+          <p class="help">PT reminder: verify ratio (e.g., 66kV/√3 : 110V/√3) and burden class; check fuse ratings & wiring.</p>
         </div>
-        <div class="field">
-          <label for="burden">Burden (VA)</label>
-          <input id="burden" type="number" step="0.1" placeholder="e.g., 10">
-        </div>
-        <div class="out" id="ctptOut">Tip: Keep CT loading within class limits (e.g., 5P10/10P10). Use proper knee-point checks for protection CTs.</div>
       </div>
-      <p class="help">Includes: ratio primary estimate, approx. apparent load, and reminder on class (e.g., 0.5, 0.2S, 5P10). For PTs, verify VT ratio (e.g., 66kV/√3 : 110V/√3) and burden class.</p>
     </section>
 
     <!-- Supply -->
-    <section class="section wrap supply" id="supply" aria-labelledby="supply-title">
+    <section class="section wrap" id="supply" aria-labelledby="supply-title">
       <h2 id="supply-title">OEM / MRO Supply 🧰</h2>
       <p class="help">Approved OEMs • Dispatch tracking • Warranty handling • Commissioning support.</p>
       <div class="cards">
-        <div class="card reveal"><div class="pill">HT Panels</div><h3>VCB/SFU Panels, Protection Relays</h3><p>Line-ups, feeder panels, breaker retrofits, relay upgrades.</p></div>
-        <div class="card reveal"><div class="pill">Transformers</div><h3>Power/Distribution, NGR, AVR</h3><p>Oil/Dry type, CTs/PTs, accessories and Buchholz/PRV.</p></div>
-        <div class="card reveal"><div class="pill">Bus Ducts & Cables</div><h3>Rising Mains, HT/LT Cables</h3><p>Routing, trays, terminations, joints and test kits.</p></div>
-        <div class="card reveal"><div class="pill">Earthing & Lightning</div><h3>Chemical/CI electrodes, ESE/SPD</h3><p>Exothermic welding kits, test links and reports.</p></div>
+        <div class="card"><div class="pill">HT Panels</div><h3>VCB/SFU Panels, Relays</h3><p>Line-ups, feeder panels, upgrades.</p></div>
+        <div class="card"><div class="pill">Transformers</div><h3>Power/Distribution</h3><p>Oil/Dry, CTs/PTs, accessories.</p></div>
+        <div class="card"><div class="pill">Bus Ducts & Cables</div><h3>Rising Mains, HT/LT</h3><p>Routing, joints and testing.</p></div>
+        <div class="card"><div class="pill">Earthing & Lightning</div><h3>Electrodes, ESE/SPD</h3><p>Exothermic kits, test links, reports.</p></div>
       </div>
     </section>
 
     <!-- Process -->
     <section class="section wrap" id="process" aria-labelledby="process-title">
       <h2 id="process-title">How We Deliver 🛠️</h2>
-      <div class="process">
-        <div class="step reveal"><span class="n">1</span>Share SOW/SLD/BOQ</div>
-        <div class="step reveal"><span class="n">2</span>Clarifications & Quote (24h)</div>
-        <div class="step reveal"><span class="n">3</span>ITP & Method Statements</div>
-        <div class="step reveal"><span class="n">4</span>Mobilisation & Execution</div>
-        <div class="step reveal"><span class="n">5</span>T&C & Documentation</div>
-        <div class="step reveal"><span class="n">6</span>Handover & AMC</div>
-      </div>
-    </section>
-
-    <!-- Stats -->
-    <section class="section wrap" aria-label="Key metrics">
       <div class="stats">
-        <div class="stat reveal"><div class="num" data-count="66">0</div><div class="lab">kV Class</div></div>
-        <div class="stat reveal"><div class="num" data-count="140">0</div><div class="lab">Projects Delivered</div></div>
-        <div class="stat reveal"><div class="num" data-count="24">0</div><div class="lab">hr Quote Turnaround</div></div>
-        <div class="stat reveal"><div class="num" data-count="99">0</div><div class="lab">% Planned Uptime</div></div>
+        <div class="stat"><div class="num" data-count="66">0</div><div class="lab">kV Class</div></div>
+        <div class="stat"><div class="num" data-count="140">0</div><div class="lab">Projects</div></div>
+        <div class="stat"><div class="num" data-count="24">0</div><div class="lab">hr Quote</div></div>
+        <div class="stat"><div class="num" data-count="99">0</div><div class="lab">% Uptime</div></div>
       </div>
     </section>
 
     <!-- Projects -->
     <section class="section wrap" id="projects" aria-labelledby="projects-title">
       <h2 id="projects-title">Featured Projects 🧷</h2>
-      <div class="filters" role="group" aria-label="Filter projects">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="data-center">Data Center</button>
-        <button class="chip" data-filter="industrial">Industrial</button>
-        <button class="chip" data-filter="utilities">Utilities</button>
-      </div>
-
       <div class="carousel" aria-label="Project highlights">
         <div class="viewport">
           <div class="track" id="projectTrack">
-            <figure class="slide"><img loading="lazy" decoding="async" src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" width="1280" height="720" alt="220 kV AIS sub-station yard at Chillakallu, Andhra Pradesh"><figcaption class="meta">220 kV AIS Substation • EPC + T&C • <em>Andhra Pradesh</em></figcaption></figure>
+            <figure class="slide"><img loading="lazy" decoding="async" src="/220_KV_Sub_Station_at_Chillakallu_village_AP_Trans_Co.jpg" width="1280" height="720" alt="220 kV AIS substation yard at Chillakallu, Andhra Pradesh"><figcaption class="meta">220 kV AIS • EPC + T&C • <em>Andhra Pradesh</em></figcaption></figure>
             <figure class="slide"><img loading="lazy" decoding="async" src="/Traction_Substation_at_Simhachalam_01.jpg" width="1280" height="720" alt="Indian Railways traction substation at Simhachalam, Visakhapatnam"><figcaption class="meta">Traction Substation • T&C • <em>Railways (Vizag)</em></figcaption></figure>
             <figure class="slide"><img loading="lazy" decoding="async" src="/Power_substation_patigadda.jpg" width="1280" height="720" alt="Urban distribution substation at Patigadda, Hyderabad"><figcaption class="meta">Urban Substation • Retrofits • <em>Hyderabad</em></figcaption></figure>
           </div>
@@ -257,19 +338,19 @@
     <section class="section wrap" id="capabilities" aria-labelledby="caps-title">
       <h2 id="caps-title">Capabilities & Documentation 📚</h2>
       <div class="cards" style="margin-bottom:14px">
-        <article class="card reveal"><h3>Technical</h3><ul><li>HT Panels (VCB/SFU), Transformers, CT/PT, AVR</li><li>Bus Ducts, Rising Mains, HT/LT Cabling</li><li>Protection & Relays: Differential, Distance, OC/EF</li><li>SCADA/Automation integration, SOE, Time Sync</li></ul></article>
-        <article class="card reveal"><h3>Quality & Safety</h3><ul><li>Method Statements, ITPs, FAT/SAT, Checklists</li><li>NABL-traceable test equipment & calibration</li><li>LOTO, PPE, PTW, Toolbox Talks</li><li>SLDs, red-lines, as-builts, O&M manuals</li></ul></article>
-        <article class="card reveal" id="downloads"><h3>Downloads</h3><p class="help">Replace with actual file links.</p><ul><li><a class="btn link" href="#">Company Profile (PDF)</a></li><li><a class="btn link" href="#">Capability Statement (PDF)</a></li><li><a class="btn link" href="#">HSE Policy (PDF)</a></li></ul></article>
+        <article class="card"><h3>Technical</h3><ul><li>HT Panels (VCB/SFU), Transformers, CT/PT, AVR</li><li>Bus Ducts, Rising Mains, HT/LT Cabling</li><li>Protection: Differential, Distance, OC/EF</li><li>SCADA/Automation, SOE, Time Sync</li></ul></article>
+        <article class="card"><h3>Quality & Safety</h3><ul><li>Method Statements, ITPs, FAT/SAT</li><li>NABL-traceable equipment</li><li>LOTO, PPE, PTW, Toolbox Talks</li><li>SLDs, red-lines, O&M</li></ul></article>
+        <article class="card" id="downloads"><h3>Downloads</h3><p class="help">Replace with actual file links.</p><ul><li><a class="btn link" href="#">Company Profile (PDF)</a></li><li><a class="btn link" href="#">Capability Statement (PDF)</a></li><li><a class="btn link" href="#">HSE Policy (PDF)</a></li></ul></article>
       </div>
     </section>
 
     <!-- Testimonials -->
-    <section class="section wrap testi" aria-labelledby="testi-title">
+    <section class="section wrap" id="testi" aria-labelledby="testi-title">
       <h2 id="testi-title">What Clients Say 💬</h2>
-      <div class="grid3">
-        <blockquote class="quote reveal">“Planned shutdown and restart executed perfectly. Documentation was thorough.” — <strong>Industrial Client</strong></blockquote>
-        <blockquote class="quote reveal">“OEM supply arrived on time with commissioning support—no surprises.” — <strong>Data Center Client</strong></blockquote>
-        <blockquote class="quote reveal">“Relay coordination and CEIG support made approvals seamless.” — <strong>Utility Client</strong></blockquote>
+      <div class="cards">
+        <blockquote class="card">“Planned shutdown and restart executed perfectly. Documentation was thorough.” — <strong>Industrial Client</strong></blockquote>
+        <blockquote class="card">“OEM supply arrived on time with commissioning support—no surprises.” — <strong>Data Center Client</strong></blockquote>
+        <blockquote class="card">“Relay coordination and CEIG support made approvals seamless.” — <strong>Utility Client</strong></blockquote>
       </div>
     </section>
 
@@ -300,9 +381,9 @@
               <div class="field"><label for="qqWhen">Expected Start</label><input id="qqWhen" name="when" placeholder="e.g., 6 weeks"></div>
             </div>
           </div>
-          <div class="field" style="margin-top:10px"><label for="qqNotes">Notes</label><textarea id="qqNotes" name="notes" rows="4" placeholder="Brief scope or constraints"></textarea></div>
-          <div class="actions">
-            <button class="btn primary" type="submit">Send</button><span id="qqStatus" class="help" aria-live="polite"></span>
+          <div class="field" style="margin:10px 14px 0"><label for="qqNotes">Notes</label><textarea id="qqNotes" name="notes" rows="4" placeholder="Brief scope or constraints"></textarea></div>
+          <div class="actions" style="padding:12px 14px 16px">
+            <button class="btn primary" type="submit">Send</button><span id="qqStatus" class="help" aria-live="polite" style="margin-left:.6rem"></span>
           </div>
         </form>
       </div>
@@ -312,7 +393,7 @@
     <section class="section wrap contact" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title">Contact ✉️</h2>
       <div class="cols">
-        <div class="card card-pad">
+        <div class="card">
           <h3>AMC Spark & Services</h3>
           <p><strong>Address:</strong> C-7, GF, RPS Palms, Sector 88, Faridabad, Haryana 121002</p>
           <div class="mapbox">
@@ -325,14 +406,14 @@
           <p class="help" style="margin-top:8px">
             <a class="btn link" href="https://maps.app.goo.gl/RoAQtTmxBF8ZhkEg9" target="_blank" rel="noopener">Open in Google Maps →</a>
           </p>
-          <ul class="help list">
+          <ul class="help" style="list-style:none;padding:0;margin:0">
             <li>📞 <a href="tel:+919220533011">+91 9220533011</a></li>
             <li>📧 <a href="mailto:info@amcspark.com">info@amcspark.com</a></li>
             <li>🕘 Mon–Fri 9:00–18:00</li>
           </ul>
         </div>
 
-        <div class="card card-pad">
+        <div class="card">
           <h3>Quick Message</h3>
           <form id="contactForm" novalidate>
             <div class="field"><label for="cname">Name *</label><input id="cname" name="name" required></div>
@@ -342,7 +423,7 @@
               <button class="btn primary" type="submit">Send</button>
               <span id="contactStatus" class="help" aria-live="polite"></span>
             </div>
-            <p class="help" style="margin-top:10px">We usually reply within 24 hours. For tenders, attach docs in Project Desk.</p>
+            <p class="help" style="margin-top:10px">We reply within 24 hours. For tenders, attach docs in Project Desk.</p>
           </form>
         </div>
       </div>
@@ -405,7 +486,9 @@
     </section>
   </main>
 
-  <!-- Footer -->
+  <!-- ======================================
+    PART 4 — FOOTER + SCRIPTS (mobile UX)
+  ====================================== -->
   <footer class="footer" role="contentinfo">
     <div class="wrap grid4">
       <div>
@@ -421,7 +504,7 @@
       <div><h4>Company</h4><ul class="list">
         <li><a href="#services">Services</a></li><li><a href="#supply">Supply</a></li><li><a href="#process">Process</a></li><li><a href="#projects">Projects</a></li></ul></div>
       <div><h4>Resources</h4><ul class="list">
-        <li><a href="#downloads">Downloads</a></li><li><a href="#faq-title">FAQ</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul></div>
+        <li><a href="#downloads">Downloads</a></li><li><a href="#testi">Testimonials</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul></div>
       <div><h4>Reach Us</h4><p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p></div>
     </div>
 
@@ -437,7 +520,7 @@
   </footer>
 </div>
 
-<!-- Fixed helpers -->
+<!-- Sticky helpers -->
 <div class="sticky-cta"><a class="btn primary" href="#project-desk">Get a Quote</a></div>
 <a id="backTop" class="btn ghost backtop" href="#home" aria-label="Back to top">↑</a>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -453,7 +536,6 @@
 <!-- Full-screen Loader -->
 <div id="loaderFS" class="loaderfs" aria-hidden="true" aria-live="polite">
   <div class="loader-card">
-    <div class="loader-emoji">⚡</div>
     <div class="loader-ring" aria-hidden="true"></div>
     <div class="loader-txt">Sending… good vibes only ✨</div>
   </div>
@@ -461,7 +543,146 @@
 
 <noscript><div class="wrap" style="padding:10px; text-align:center">JavaScript is disabled. Interactive features are limited.</div></noscript>
 
-<!-- Scripts -->
-<script defer src="/static/assets/app.js"></script>
+<script>
+  // ===== Mobile-first JS (no external deps) =====
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const toast = (m)=>{const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600)};
+
+  // Year
+  $("#year").textContent = new Date().getFullYear();
+
+  // Theme toggle (pref saved)
+  const themeBtn = $("#themeBtn");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  let mode = localStorage.getItem("amc_theme") || (prefersDark ? "dark" : "light");
+  document.documentElement.dataset.theme = mode;
+  themeBtn?.addEventListener("click", ()=>{
+    mode = (mode === "dark" ? "light" : "dark");
+    document.documentElement.dataset.theme = mode;
+    localStorage.setItem("amc_theme", mode);
+    toast(`Theme: ${mode}`);
+  });
+
+  // Mobile nav
+  const mobileBtn = $("#mobileMenuBtn");
+  const navlinks = $("#navlinks");
+  mobileBtn?.addEventListener("click", ()=>{
+    navlinks.classList.toggle("open");
+    mobileBtn.setAttribute("aria-expanded", navlinks.classList.contains("open"));
+  });
+  // Close drawer on link click (mobile)
+  navlinks?.addEventListener("click", (e)=>{
+    if(e.target.tagName === "A" && navlinks.classList.contains("open")) navlinks.classList.remove("open");
+  });
+
+  // Tabs
+  $$(".tab").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      $$(".tab").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      const id = btn.id.replace("t-","tab-");
+      $$(".pane").forEach(p=>p.classList.remove("active"));
+      $("#"+id)?.classList.add("active");
+    });
+  });
+
+  // Stats count-up on view
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const el = e.target; const target = +el.dataset.count || 0; let n=0;
+        const step = Math.max(1, Math.floor(target/30));
+        const it = setInterval(()=>{ n+=step; el.textContent = (n>=target?target:n); if(n>=target) clearInterval(it); }, 30);
+        io.unobserve(el);
+      }
+    })
+  }, {threshold:.5});
+  $$(".stat .num").forEach(el=>io.observe(el));
+
+  // Carousel (swipe-friendly)
+  const track = $("#projectTrack");
+  let ix = 0;
+  const slides = $$(".slide", track);
+  const go = dir => { ix = (ix + dir + slides.length) % slides.length; track.style.transform = `translateX(-${ix*100}%)`; }
+  $("#prevSlide")?.addEventListener("click", ()=>go(-1));
+  $("#nextSlide")?.addEventListener("click", ()=>go(+1));
+  // Touch swipe
+  let sx=0; track.addEventListener("touchstart",e=>sx=e.touches[0].clientX,{passive:true});
+  track.addEventListener("touchend",e=>{const dx=(e.changedTouches[0].clientX - sx); if(Math.abs(dx)>40) go(dx<0?+1:-1)},{passive:true});
+
+  // Quick Quote modal
+  const modal = $("#quoteModal");
+  const openQuote = ()=>modal.classList.add("open");
+  const closeQuote = ()=>modal.classList.remove("open");
+  $("#openQuote")?.addEventListener("click", openQuote);
+  $("#openQuote2")?.addEventListener("click", openQuote);
+  $("#closeQuote")?.addEventListener("click", closeQuote);
+  modal?.addEventListener("click",(e)=>{ if(e.target===modal) closeQuote(); });
+
+  // Forms (frontend validation + fake submit for demo)
+  const blockWhileSending = (on=true)=>$("#loaderFS").classList.toggle("show", on);
+
+  const handleForm = (form, statusEl, successMsg)=>{
+    form?.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      if(!form.checkValidity()){ form.reportValidity(); return; }
+      blockWhileSending(true);
+      try{
+        // TODO: hook to your Flask endpoints: /api/quick-quote, /api/contact, /api/project
+        await new Promise(r=>setTimeout(r, 800)); // simulate
+        statusEl.textContent = successMsg;
+        toast("Sent ✅");
+        form.reset();
+      } catch(err){ statusEl.textContent = "Failed. Try again."; toast("Failed ❌"); }
+      finally{ blockWhileSending(false); }
+    });
+  };
+
+  handleForm($("#qqForm"), $("#qqStatus"), "Received — we’ll revert in 24h.");
+  handleForm($("#contactForm"), $("#contactStatus"), "Thanks! We’ll reply soon.");
+  handleForm($("#projForm"), $("#projStatus"), "Request received — check your email.");
+
+  // CT/PT helper
+  const out = $("#ctptOut");
+  const parseRatio = s => {
+    const m = (s||"").match(/(\d+)\s*\/\s*(\d+)/); if(!m) return null;
+    return {p:+m[1], s:+m[2]};
+  };
+  const recompute = ()=>{
+    const r = parseRatio($("#ctRatio").value);
+    const I2 = parseFloat($("#secCurrent").value||"0");
+    const VA = parseFloat($("#burden").value||"0");
+    if(!r || !I2 || !VA){ out.textContent = "Tip: enter ratio, secondary current & burden."; return; }
+    const I1 = (r.p/r.s)*I2;
+    const Z = (VA / (I2||1e-6)); // Ω approx @ sec
+    out.textContent = `Suggest: CT ≈ ${Math.round(I1)} A primary at ${I2} A secondary; approx secondary impedance ${Z.toFixed(2)} Ω. Keep within class (e.g., 5P10).`;
+  };
+  ["ctRatio","secCurrent","burden"].forEach(id=>$("#"+id).addEventListener("input",recompute));
+
+  // Command palette (Ctrl/Cmd+K)
+  const pal = $("#palette"), palInput=$("#palInput"), palList=$("#palList");
+  const links = [
+    {t:"Services",h:"#services"}, {t:"Supply",h:"#supply"}, {t:"Process",h:"#process"},
+    {t:"Projects",h:"#projects"}, {t:"CT/PT",h:"#ctpt"}, {t:"Capabilities",h:"#capabilities"},
+    {t:"Project Desk",h:"#project-desk"}, {t:"Contact",h:"#contact"}
+  ];
+  const openPal=()=>{pal.classList.add("open"); palInput.value=""; fill(""); palInput.focus();}
+  const closePal=()=>pal.classList.remove("open");
+  const fill=(q)=>{ palList.innerHTML = links.filter(x=>x.t.toLowerCase().includes(q.toLowerCase())).map(x=>`<li><a href="${x.h}">${x.t}</a></li>`).join(""); };
+  window.addEventListener("keydown",(e)=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault(); openPal();}
+    if(e.key==="Escape"){ closePal(); }
+  });
+  palInput?.addEventListener("input", e=>fill(e.target.value));
+  pal?.addEventListener("click",(e)=>{ if(e.target===pal) closePal(); });
+
+  // Back to top: show after scroll
+  const backTop = $("#backTop");
+  const showOn = 280;
+  window.addEventListener("scroll", ()=>{
+    backTop.style.display = window.scrollY > showOn ? "inline-flex" : "none";
+  }, {passive:true});
+</script>
 </body>
 </html>
