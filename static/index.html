@@ -1,154 +1,144 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Meta -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AMC Spark & Services — Electrical Projects • EPC • T&C • Retrofits • AMC (11–66 kV)</title>
-  <meta name="description" content="Direct electrical projects, EPC, testing & commissioning, retrofits, AMC, and OEM/MRO supply for heavy‑load sites. Quote in 24 hours." />
+  <meta name="description" content="Direct electrical projects, EPC, testing & commissioning, retrofits, AMC, and OEM/MRO supply for heavy-load sites. Quote in 24 hours." />
   <link rel="icon" href="/favicon.ico" />
-  <meta name="theme-color" content="#0a0f1f" />
-  
-  <!-- Fonts (optional; remove if hosting locally) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
   <style>
   /* =========================================================
-     AMC Spark — SINGLE FILE (HTML+CSS+JS)
-     Design goals: "sexy" premium, mobile‑first, crisp contrast, soft glows
+     AMC Spark — Single-file (HTML+CSS+JS)
+     Premium dark, mobile-first, no theme toggle, admin in footer
      ========================================================= */
 
   /* ---------- Tokens ---------- */
   :root{
     --bg:#0a0f1f; --bg-2:#0c142b; --surface:#0b1328; --panel:#0d1737; --card:#0e1839; --border:#1b2a55;
     --fg:#eef4ff; --muted:#a6b4c8; --muted-2:#8fa4bf;
-    --brand:#11b5ff; --brand-2:#22c55e; --accent:#8b5cf6; --amber:#ffd36a;
+    --brand:#11b5ff; --brand-2:#22c55e; --accent:#8b5cf6;
     --ring:0 0 0 2px rgba(17,181,255,.35); --shadow:0 28px 72px rgba(0,0,0,.55);
-  }
-  @media (prefers-color-scheme: light){
-    :root{ --bg:#f6f9ff; --bg-2:#ffffff; --surface:#ffffff; --panel:#ffffff; --card:#ffffff; --border:#e6ecf6; --fg:#0b1020; --muted:#3a4a65; --muted-2:#4f6078; --shadow:0 18px 50px rgba(2,6,23,.08)}
   }
 
   /* ---------- Base ---------- */
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{margin:0; color:var(--fg);
-    background:radial-gradient(1200px 380px at 10% -10%, rgba(17,181,255,.12), transparent 60%),
-               radial-gradient(900px 320px at 90% -12%, rgba(34,197,94,.10), transparent 60%),
-               linear-gradient(180deg,var(--bg),var(--bg-2) 55%);
+  body{
+    margin:0; color:var(--fg);
+    background:
+      radial-gradient(1200px 380px at 10% -10%, rgba(17,181,255,.12), transparent 60%),
+      radial-gradient(900px 320px at 90% -12%, rgba(34,197,94,.10), transparent 60%),
+      linear-gradient(180deg,var(--bg),var(--bg-2) 55%);
     font-family:Manrope,Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
     line-height:1.45;
   }
-  a{color:inherit; text-decoration:none}
+  a{color:inherit;text-decoration:none}
   a:hover{text-decoration:underline}
-  img{max-width:100%; height:auto; display:block}
-  .wrap{max-width:1140px; margin-inline:auto; padding-inline:16px}
-
-  /* ---------- Utilities ---------- */
-  .btn{display:inline-flex; align-items:center; gap:.6rem; padding:.9rem 1.1rem; border:1px solid var(--border); border-radius:16px; text-decoration:none; color:var(--fg); position:relative; isolation:isolate; transition:transform .12s ease}
-  .btn:active{transform:translateY(1px)}
-  .btn.primary{border:0; color:#041018; font-weight:900; background:linear-gradient(90deg,var(--brand),var(--brand-2)); box-shadow:0 14px 28px rgba(17,181,255,.20)}
-  .btn.primary::after{content:""; position:absolute; inset:-2px; border-radius:18px; background:linear-gradient(90deg,var(--brand),var(--accent)); filter:blur(18px); opacity:.32; z-index:-1}
-  .btn.ghost{background:rgba(255,255,255,.04)}
-  .btn.link{border:0; padding:0; text-decoration:underline; background:transparent}
-  .pill{display:inline-flex; gap:.45rem; align-items:center; font-size:.86rem; padding:.42rem .66rem; border:1px solid var(--border); border-radius:999px; color:#a7ffcf; background:rgba(34,197,94,.08)}
+  img{max-width:100%;height:auto;display:block}
+  .wrap{max-width:1140px;margin-inline:auto;padding-inline:16px}
+  .section{padding:36px 0}
   .muted{color:var(--muted)}
-  .visually-hidden{position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+  .visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
   /* ---------- Topbar ---------- */
-  .topbar{font-size:.95rem; background:rgba(12,20,38,.75); border-bottom:1px solid var(--border); backdrop-filter:blur(6px)}
-  .topbar-inner{display:flex; gap:12px; align-items:center; justify-content:space-between; padding:.6rem 0; flex-wrap:wrap}
+  .topbar{font-size:.95rem;background:rgba(12,20,38,.75);border-bottom:1px solid var(--border);backdrop-filter:blur(6px)}
+  .topbar-inner{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:.6rem 0;flex-wrap:wrap}
 
-  /* ---------- Header / Drawer Nav ---------- */
-  header{position:sticky; top:0; z-index:70; background:rgba(7,11,23,.7); border-bottom:1px solid var(--border); backdrop-filter:blur(10px)}
-  .nav{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-block:10px}
-  .logo{display:flex; align-items:center; gap:.65rem; font-weight:900; letter-spacing:.2px; white-space:nowrap}
-  .brand-sub{background:linear-gradient(90deg,var(--brand),var(--brand-2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  /* ---------- Header & Navigation ---------- */
+  header{position:sticky;top:0;z-index:70;background:rgba(7,11,23,.7);border-bottom:1px solid var(--border);backdrop-filter:blur(10px)}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+  .logo{display:flex;align-items:center;gap:.65rem;font-weight:900;letter-spacing:.2px;white-space:nowrap}
+  .brand-sub{background:linear-gradient(90deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
 
-  .mobile-toggle{display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--fg)}
-  .navlinks{position:fixed; inset:auto 0 0 0; translate:0 110%; transition:translate .26s ease; background:var(--panel); border-top:1px solid var(--border); padding:14px 16px; display:grid; gap:10px; z-index:65}
-  .navlinks a,.navlinks button{padding:1rem 1rem; border-radius:12px; border:1px solid var(--border); background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
+  .mobile-toggle{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--fg)}
+  .navlinks{position:fixed;left:0;right:0;bottom:0;translate:0 110%;transition:translate .26s ease;background:var(--panel);border-top:1px solid var(--border);padding:14px 16px;display:grid;gap:10px;z-index:65}
+  .navlinks a{padding:1rem;border-radius:12px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
   .navlinks.open{translate:0 0}
-  @media (min-width: 900px){ .mobile-toggle{display:none} .navlinks{position:static; translate:none; background:transparent; border:0; padding:0; display:flex; gap:1rem} .navlinks a,.navlinks button{border:0; background:transparent; padding:.45rem .55rem} }
+  @media (min-width: 900px){
+    .mobile-toggle{display:none}
+    .navlinks{position:static;translate:none;background:transparent;border:0;padding:0;display:flex;gap:1rem}
+    .navlinks a{border:0;background:transparent;padding:.45rem .55rem}
+  }
 
   /* ---------- Hero ---------- */
-  .hero{display:grid; gap:16px; padding:28px 0 40px; position:relative}
-  .hero h1{font-size:clamp(1.55rem,2.8vw+1rem,3.3rem); line-height:1.12; margin:0}
+  .hero{display:grid;gap:16px;padding:28px 0 40px;position:relative}
+  .hero h1{font-size:clamp(1.55rem,2.8vw+1rem,3.2rem);line-height:1.12;margin:0}
   .lead{color:var(--muted)}
-  .cta{display:flex; flex-wrap:wrap; gap:.8rem}
-  .hero-media{border-radius:18px; border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden}
-  .hero-media img{display:block}
-  
-  /* Glow orbs */
-  .orb{position:absolute; filter:blur(26px); opacity:.45; border-radius:50%}
-  .orb.one{width:220px; height:220px; background:radial-gradient(circle, rgba(17,181,255,.35), transparent 60%); top:-40px; left:-20px}
-  .orb.two{width:260px; height:260px; background:radial-gradient(circle, rgba(139,92,246,.28), transparent 60%); top:-60px; right:-10px}
+  .cta{display:flex;flex-wrap:wrap;gap:.8rem}
+  .hero-media{border-radius:18px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
 
-  /* ---------- Trust rail ---------- */
-  .trust{padding:14px 0; border-block:1px solid var(--border); background:var(--surface)}
-  .logo-rail{display:flex; gap:24px; overflow:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding-bottom:6px; mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-  .logo-rail img{height:30px; opacity:.9; filter:grayscale(1); scroll-snap-align:center}
+  .pill{display:inline-flex;gap:.45rem;align-items:center;font-size:.86rem;padding:.42rem .66rem;border:1px solid var(--border);border-radius:999px;color:#a7ffcf;background:rgba(34,197,94,.08)}
 
-  /* ---------- Sections ---------- */
-  .section{padding:36px 0}
-  .cards{display:grid; gap:12px; list-style:none; padding:0; margin:0}
+  /* ---------- Buttons ---------- */
+  .btn{display:inline-flex;align-items:center;gap:.6rem;padding:.9rem 1.1rem;border:1px solid var(--border);border-radius:16px;text-decoration:none;color:var(--fg);position:relative;isolation:isolate;transition:transform .12s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{border:0;color:#041018;font-weight:900;background:linear-gradient(90deg,var(--brand),var(--brand-2));box-shadow:0 14px 28px rgba(17,181,255,.20)}
+  .btn.primary::after{content:"";position:absolute;inset:-2px;border-radius:18px;background:linear-gradient(90deg,var(--brand),var(--accent));filter:blur(18px);opacity:.32;z-index:-1}
+  .btn.ghost{background:rgba(255,255,255,.04)}
+  .btn.link{border:0;padding:0;text-decoration:underline;background:transparent}
+
+  /* ---------- Client logo rail ---------- */
+  .trust{padding:14px 0;border-block:1px solid var(--border);background:var(--surface)}
+  .logo-rail{display:flex;gap:24px;overflow:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:6px;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .logo-rail img{height:30px;opacity:.9;filter:grayscale(1);scroll-snap-align:center}
+
+  /* ---------- Stats ---------- */
+  .stats-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;list-style:none;padding:0;margin:0}
+  .stats-list li{padding:16px;border:1px solid var(--border);border-radius:14px;text-align:center;background:var(--surface)}
+  .stats-list b{display:block;font-size:1.5rem}
+  .stats-list span{color:var(--muted)}
+  @media (min-width:720px){ .stats-list{grid-template-columns:repeat(4,minmax(0,1fr))} }
+
+  /* ---------- Card grids ---------- */
+  .cards{display:grid;gap:12px;list-style:none;padding:0;margin:0}
   .cards.two{grid-template-columns:1fr}
   .cards.three{grid-template-columns:1fr}
   .cards.four{grid-template-columns:1fr}
   @media (min-width:680px){ .cards.two{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media (min-width:900px){ .cards.three{grid-template-columns:repeat(3,minmax(0,1fr))} .cards.four{grid-template-columns:repeat(4,minmax(0,1fr))} }
 
-  .card{position:relative; padding:16px; border-radius:16px; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)); border:1px solid var(--border); overflow:hidden}
-  .card::before{content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1px; background:linear-gradient(120deg, rgba(17,181,255,.5), rgba(139,92,246,.3), rgba(34,197,94,.4)); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:.25}
-
-  /* ---------- Stats ---------- */
-  .stats-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; list-style:none; padding:0; margin:0}
-  .stats-list li{padding:16px; border:1px solid var(--border); border-radius:14px; text-align:center; background:var(--surface)}
-  .stats-list b{display:block; font-size:1.5rem}
-  .stats-list span{color:var(--muted)}
-  @media (min-width:720px){ .stats-list{grid-template-columns:repeat(4,minmax(0,1fr))} }
+  .card{position:relative;padding:16px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid var(--border);overflow:hidden}
+  .card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(120deg, rgba(17,181,255,.5), rgba(139,92,246,.3), rgba(34,197,94,.4));-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.25}
 
   /* ---------- Gallery ---------- */
-  .gallery{display:grid; gap:10px; grid-auto-flow:column; grid-auto-columns:88%; overflow:auto; scroll-snap-type:x mandatory; padding-bottom:6px}
-  .gitem{border:1px solid var(--border); border-radius:16px; overflow:hidden; background:var(--surface); scroll-snap-align:center}
-  .gitem figcaption{padding:10px; color:#b7c2d6}
-  @media (min-width:900px){ .gallery{grid-auto-flow:unset; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible} }
+  .gallery{display:grid;gap:10px;grid-auto-flow:column;grid-auto-columns:88%;overflow:auto;scroll-snap-type:x mandatory;padding-bottom:6px}
+  .gitem{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);scroll-snap-align:center}
+  .gitem figcaption{padding:10px;color:#b7c2d6}
+  @media (min-width:900px){ .gallery{grid-auto-flow:unset;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible} }
 
   /* ---------- Forms ---------- */
-  .form-tabs{display:flex; gap:8px; overflow:auto; padding-bottom:6px}
-  .form-tabs .tab{white-space:nowrap; border:1px solid var(--border); background:rgba(255,255,255,.04); padding:.7rem 1rem; border-radius:12px; color:var(--fg)}
+  .form-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:6px}
+  .form-tabs .tab{white-space:nowrap;border:1px solid var(--border);background:rgba(255,255,255,.04);padding:.7rem 1rem;border-radius:12px;color:var(--fg)}
   .form-tabs .tab.is-active{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03))}
   .tabpanes .pane{display:none}
   .tabpanes .pane.is-active{display:block}
 
-  .form-grid{display:grid; gap:12px; max-width:760px}
-  .form-grid label{display:grid; gap:6px}
-  .form-grid input,.form-grid select,.form-grid textarea{width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--fg); outline:none}
+  .form-grid{display:grid;gap:12px;max-width:760px}
+  .form-grid label{display:grid;gap:6px}
+  .form-grid input,.form-grid select,.form-grid textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--fg);outline:none}
   .form-grid input:focus,.form-grid select:focus,.form-grid textarea:focus{box-shadow:var(--ring)}
-  .form-grid .actions{display:flex; align-items:center; gap:10px}
+  .form-grid .actions{display:flex;align-items:center;gap:10px}
   .status{color:var(--muted)}
 
   /* ---------- Footer ---------- */
-  footer{border-top:1px solid var(--border); padding-top:22px; padding-bottom:26px}
-  .grid4{display:grid; gap:14px; grid-template-columns:1fr}
+  footer{border-top:1px solid var(--border);padding-top:22px;padding-bottom:26px}
+  .grid4{display:grid;gap:14px;grid-template-columns:1fr}
   @media (min-width:860px){ .grid4{grid-template-columns:repeat(4,minmax(0,1fr))} }
-  footer .links{list-style:none; padding:0; margin:0}
+  footer .links{list-style:none;padding:0;margin:0}
   footer .links li{margin:.3rem 0}
-  footer .copyright{margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:#97a4b8; flex-wrap:wrap}
+  .copyright{margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;color:#97a4b8;flex-wrap:wrap}
 
   /* ---------- Back to top ---------- */
-  #backTop{position:fixed; right:18px; bottom:76px; display:none; padding:.65rem .8rem; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.04); text-decoration:none; color:var(--fg); z-index:68}
-
-  /* ---------- Motion ---------- */
-  @keyframes spin{to{transform:rotate(360deg)}}
-  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important; scroll-behavior:auto} }
+  #backTop{position:fixed;right:18px;bottom:76px;display:none;padding:.65rem .8rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.04);text-decoration:none;color:var(--fg);z-index:68}
   </style>
 </head>
 <body>
-  <div class="orb one" aria-hidden="true"></div>
-  <div class="orb two" aria-hidden="true"></div>
-
   <!-- Topbar -->
   <div class="topbar" role="region" aria-label="Announcement">
     <div class="wrap topbar-inner">
@@ -164,25 +154,25 @@
   <header role="banner">
     <div class="wrap nav">
       <a class="logo" href="#home" aria-label="AMC Spark & Services Home">⚡ AMC <span class="brand-sub">Spark</span> & Services</a>
-      <button id="navToggle" class="mobile-toggle" aria-label="Open Menu" type="button">☰</button>
+      <button id="navToggle" class="mobile-toggle" aria-label="Open Menu" type="button" aria-expanded="false">☰</button>
       <nav id="navlinks" class="navlinks" aria-label="Primary">
         <a href="#services">Services</a>
         <a href="#supply">Supply</a>
         <a href="#projects">Projects</a>
         <a href="#forms">Forms</a>
         <a href="#downloads">Downloads</a>
+        <a href="#about">About</a>
+        <a href="#careers">Careers</a>
         <a href="#contact">Contact</a>
-        <a href="/admin">🔐 Admin</a>
-        <button id="themeBtn" class="btn ghost" type="button" aria-label="Toggle theme">🌓 Theme</button>
       </nav>
     </div>
   </header>
 
-  <!-- Main -->
-  <main id="home" class="wrap">
+  <!-- Hero -->
+  <main id="home" class="wrap" role="main">
     <section class="section hero" aria-labelledby="hero-title">
       <span class="pill">Direct Projects • Retrofits • AMC • OEM/MRO Supply</span>
-      <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy‑Load Sites ⚡</h1>
+      <h1 id="hero-title">Direct Electrical Projects, OEM Supply & Services for Heavy-Load Sites ⚡</h1>
       <p class="lead">EPC, Testing & Commissioning, Retrofits, AMC — <strong>11–66 kV</strong> substations, HT panels, bus ducts, protection & relays, earthing and lightning protection.</p>
       <div class="cta">
         <a class="btn primary" href="#forms">🚀 Get a Quote</a>
@@ -212,7 +202,7 @@
         <li>⚡ <b>24h</b><span>Quote turnaround</span></li>
         <li>🛡️ <b>CEIG</b><span>Approval coordination</span></li>
         <li>🕒 <b>24×7</b><span>AMC support</span></li>
-        <li>🗺️ <b>Pan‑India</b><span>Execution network</span></li>
+        <li>🗺️ <b>Pan-India</b><span>Execution network</span></li>
       </ul>
     </section>
 
@@ -220,9 +210,9 @@
     <section id="services" class="section wrap" aria-labelledby="services-title">
       <h2 id="services-title">Services 💼</h2>
       <ul class="cards three">
-        <li class="card"><h3>Design & Studies</h3><p class="muted">SLD, load list, short‑circuit, relay coordination, earthing grid, lightning layout.</p></li>
-        <li class="card"><h3>Build & Install</h3><p class="muted">HT panels, transformers, bus ducts, cabling, terminations, SCADA & time‑sync.</p></li>
-        <li class="card"><h3>T&amp;C & Handover</h3><p class="muted">Method statements, ITPs, FAT/SAT, as‑builts, O&amp;M, CEIG coordination.</p></li>
+        <li class="card"><h3>Design & Studies</h3><p class="muted">SLD, load list, short-circuit, relay coordination, earthing grid, lightning layout.</p></li>
+        <li class="card"><h3>Build & Install</h3><p class="muted">HT panels, transformers, bus ducts, cabling, terminations, SCADA & time-sync.</p></li>
+        <li class="card"><h3>T&amp;C & Handover</h3><p class="muted">Method statements, ITPs, FAT/SAT, as-builts, O&amp;M, CEIG coordination.</p></li>
       </ul>
       <ul class="cards two" style="margin-top:12px">
         <li class="card"><h3>Testing & Commissioning</h3><p class="muted">Primary injection, IR/PI, contact resistance, CT/PT polarity & ratio checks, protection tests, SOE verification.</p></li>
@@ -241,7 +231,7 @@
       </ul>
     </section>
 
-    <!-- Projects gallery -->
+    <!-- Projects -->
     <section id="projects" class="section wrap" aria-labelledby="projects-title">
       <h2 id="projects-title">Featured Projects 📸</h2>
       <div class="gallery" aria-live="polite">
@@ -274,6 +264,7 @@
         <button class="tab" role="tab" aria-selected="false" aria-controls="pane-project" data-target="#pane-project" type="button">Project Desk</button>
       </div>
       <div class="tabpanes">
+        <!-- Quick Quote -->
         <section id="pane-qq" class="pane is-active" role="tabpanel">
           <form id="qqForm" class="form-grid" action="/api/quote" method="post" novalidate>
             <label>Name* <input name="name" required autocomplete="name" /></label>
@@ -295,6 +286,7 @@
           </form>
         </section>
 
+        <!-- Contact -->
         <section id="pane-contact" class="pane" role="tabpanel">
           <form id="contactForm" class="form-grid" action="/api/contact" method="post" novalidate>
             <label>Name* <input name="name" required autocomplete="name" /></label>
@@ -305,6 +297,7 @@
           </form>
         </section>
 
+        <!-- Project Desk -->
         <section id="pane-project" class="pane" role="tabpanel">
           <form id="projForm" class="form-grid" action="/api/project" method="post" enctype="multipart/form-data" novalidate>
             <label>Organisation / Dept* <input name="org" required autocomplete="organization" /></label>
@@ -371,8 +364,74 @@
       </div>
     </section>
 
-    <section id="about" class="section wrap"><h2>About</h2><p class="muted">Lean team, senior engineering network, OEM tie‑ups. Built for speed and compliance.</p></section>
-    <section id="careers" class="section wrap"><h2>Careers</h2><p class="muted">Hiring soon — project engineers, testing & commissioning, proposals. Drop a line at <a href="mailto:info@amcspark.com">info@amcspark.com</a>.</p></section>
+    <!-- About (expanded) -->
+    <section id="about" class="section wrap" aria-labelledby="about-title">
+      <h2 id="about-title">About AMC Spark</h2>
+      <div class="cards two">
+        <article class="card">
+          <h3>Who we are</h3>
+          <p class="muted">We’re a lean engineering outfit with a senior on-ground partner network across India. We specialise in <strong>11–66 kV</strong> substations, protection & relays, HT panels, and EPC delivery for time-sensitive industrial and infrastructure programmes.</p>
+          <p class="muted">Our ethos: <strong>speed with compliance</strong> — precise documentation, safe execution, and predictable handovers.</p>
+        </article>
+        <article class="card">
+          <h3>What you can expect</h3>
+          <ul class="muted">
+            <li>Fast proposals: quotes in 24 hours (when SOW/SLD/BOQ available)</li>
+            <li>CEIG approvals handled end-to-end</li>
+            <li>NABL-traceable testing & QA artefacts (ITP, FAT/SAT, as-builts)</li>
+            <li>Pan-India execution via vetted OEM/installer network</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- Careers (expanded + email resume) -->
+    <section id="careers" class="section wrap" aria-labelledby="careers-title">
+      <h2 id="careers-title">Careers</h2>
+      <div class="cards two">
+        <article class="card">
+          <h3>Open roles</h3>
+          <ul class="muted">
+            <li>Project Engineers (Substations / Protection)</li>
+            <li>Testing & Commissioning Engineers (11–66 kV)</li>
+            <li>Proposals & Tendering (EPC / Retrofit)</li>
+          </ul>
+          <p class="muted">Prefer experience with HT panels, relay coordination, FAT/SAT, and CEIG documentation.</p>
+        </article>
+        <article class="card">
+          <h3>Apply now</h3>
+          <p class="muted">Email your CV with the subject <em>“Application — [Role]”</em>. Add project highlights & notice period.</p>
+          <p>
+            <a class="btn primary"
+               href="mailto:careers@amcspark.com?subject=Application%20%E2%80%94%20Your%20Role&body=Hi%20AMC%20Spark%20Team%2C%0A%0ARole%20applying%20for%3A%20%0AYears%20of%20experience%3A%20%0ACurrent%20location%3A%20%0ANotice%20period%3A%20%0AKey%20projects%3A%20%0A%0ARegards%2C%0A">
+              ✉️ Email Resume
+            </a>
+            <a class="btn ghost" href="#downloads">See company profile</a>
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Legal -->
+    <section id="privacy" class="section wrap" aria-labelledby="privacy-title">
+      <h2 id="privacy-title">Privacy Policy</h2>
+      <div class="card">
+        <p class="muted">We collect only the information you submit via forms (contact details, scope docs). Data is used for proposal preparation and project communication. We do not sell personal data. For removal/edits, write to <a href="mailto:info@amcspark.com">info@amcspark.com</a>.</p>
+        <p class="muted">Uploaded documents are stored securely and shared only with relevant OEM partners for quotations, after NDA where applicable.</p>
+      </div>
+    </section>
+
+    <section id="terms" class="section wrap" aria-labelledby="terms-title">
+      <h2 id="terms-title">Terms & Conditions</h2>
+      <div class="card">
+        <ul class="muted">
+          <li>Quotes are valid for 15–30 days based on OEM lead times.</li>
+          <li>Payment & delivery terms are defined in the final PO / contract.</li>
+          <li>Work is executed per approved drawings, ITPs and safety procedures.</li>
+          <li>Warranty is as per OEM or as agreed in contract.</li>
+        </ul>
+      </div>
+    </section>
   </main>
 
   <!-- Footer -->
@@ -380,48 +439,78 @@
     <div class="grid4">
       <section>
         <h3 class="logo">AMC <span class="brand-sub">Spark</span> & Services</h3>
-        <p class="muted">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy‑load sites.</p>
+        <p class="muted">Direct electrical projects, retrofits, AMC, and OEM/MRO supply for heavy-load sites.</p>
       </section>
-      <section><h4>Company</h4><ul class="links"><li><a href="#services">Services</a></li><li><a href="#supply">Supply</a></li><li><a href="#projects">Projects</a></li></ul></section>
-      <section><h4>Resources</h4><ul class="links"><li><a href="#downloads">Downloads</a></li><li><a href="#forms">Forms</a></li><li><a href="#contact">Contact</a></li></ul></section>
-      <section><h4>Reach Us</h4><p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p></section>
+      <section><h4>Company</h4>
+        <ul class="links">
+          <li><a href="#services">Services</a></li>
+          <li><a href="#supply">Supply</a></li>
+          <li><a href="#projects">Projects</a></li>
+        </ul>
+      </section>
+      <section><h4>Legal</h4>
+        <ul class="links">
+          <li><a href="#privacy">Privacy Policy</a></li>
+          <li><a href="#terms">Terms & Conditions</a></li>
+          <li><a href="/admin">🔐 Admin (internal)</a></li>
+        </ul>
+      </section>
+      <section><h4>Reach Us</h4>
+        <p><a href="mailto:info@amcspark.com">info@amcspark.com</a><br><a href="tel:+919220533011">+91 9220533011</a></p>
+      </section>
     </div>
     <p class="copyright">© <span id="year">2025</span> AMC Spark & Services. All rights reserved. <a class="btn ghost" href="#home">Back to top ↑</a></p>
   </footer>
 
-  <!-- JS (inline) -->
+  <!-- JS -->
   <script>
   const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-  const toast=(m,ms=1500)=>{ let t=$('#toast'); if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:88px;background:#0c1428;border:1px solid #24315c;padding:10px 14px;border-radius:999px;z-index:90'; document.body.appendChild(t);} t.textContent=m; t.style.display='block'; clearTimeout(t._to); t._to=setTimeout(()=>t.style.display='none',ms); };
 
   // Year
   $('#year').textContent = new Date().getFullYear();
 
-  // Drawer nav
+  // Mobile drawer (force-closed on load)
   const navT=$('#navToggle'), navL=$('#navlinks');
-  navT?.addEventListener('click',()=>{ const open=navL.classList.toggle('open'); navT.setAttribute('aria-expanded',open?'true':'false'); document.body.style.overflow = open? 'hidden':''; });
-  navL?.addEventListener('click',e=>{ if(e.target.closest('a')){ navL.classList.remove('open'); document.body.style.overflow=''; }});
+  function closeNav(){ navL?.classList.remove('open'); document.body.style.overflow=''; navT?.setAttribute('aria-expanded','false'); }
+  function openNav(){ navL?.classList.add('open'); document.body.style.overflow='hidden'; navT?.setAttribute('aria-expanded','true'); }
+  closeNav();
+  navT?.addEventListener('click',()=>{ navL?.classList.contains('open') ? closeNav() : openNav(); });
+  navL?.addEventListener('click',e=>{ if(e.target.closest('a')) closeNav(); });
 
-  // Theme
-  $('#themeBtn')?.addEventListener('click',()=>{ document.body.classList.toggle('light'); toast(document.body.classList.contains('light')?'Light mode ✨':'Dark mode 🌙'); });
+  // Smooth internal links (offset for sticky header)
+  $$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+    const id=a.getAttribute('href').slice(1); if(!id) return;
+    const el=document.getElementById(id); if(!el) return;
+    e.preventDefault();
+    const headerH=document.querySelector('header')?.offsetHeight||0;
+    const y=el.getBoundingClientRect().top+window.scrollY-headerH-8;
+    window.scrollTo({top:y,behavior:'smooth'});
+  }));
 
   // Tabs
   const tabs=$$('.form-tabs .tab'); const panes=$$('.tabpanes .pane');
-  function activate(i){ tabs.forEach((t,ix)=>{t.classList.toggle('is-active',ix===i); t.setAttribute('aria-selected',ix===i?'true':'false')}); panes.forEach((p,ix)=>{p.classList.toggle('is-active',ix===i); p.hidden = ix!==i}); }
-  tabs.forEach((t,i)=> t.addEventListener('click',()=>activate(i))); activate(0);
-
-  // Smooth internal links (offset for header)
-  $$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{ const id=a.getAttribute('href').slice(1); const el=id && document.getElementById(id); if(!el) return; e.preventDefault(); const headerH=document.querySelector('header')?.offsetHeight||0; const y=el.getBoundingClientRect().top+window.scrollY-headerH-8; window.scrollTo({top:y,behavior:'smooth'}); }));
+  function activate(i){ tabs.forEach((t,ix)=>{t.classList.toggle('is-active',ix===i); t.setAttribute('aria-selected',ix===i?'true':'false')}); panes.forEach((p,ix)=>{p.classList.toggle('is-active',ix===i); p.hidden=ix!==i}); }
+  tabs.forEach((t,i)=> t.addEventListener('click',()=>activate(i))); if(tabs.length) activate(0);
 
   // Forms (fetch)
-  async function wireForm(sel,url,statusSel){ const f=$(sel); const s=$(statusSel); if(!f) return; f.addEventListener('submit',async e=>{ e.preventDefault(); s&&(s.textContent='Sending…'); try{ const fd=new FormData(f); const r=await fetch(url,{method:'POST',body:fd}); if(!r.ok) throw new Error('Network'); s&&(s.textContent='Done. We\'ll reach out soon ✅'); toast('Sent!'); f.reset(); window.scrollTo({top:0,behavior:'smooth'});}catch(err){ s&&(s.textContent='Failed. Try again.'); toast('Something went wrong ❌'); }}); }
+  async function wireForm(sel,url,statusSel){
+    const f=$(sel); const s=$(statusSel); if(!f) return;
+    f.addEventListener('submit',async e=>{
+      e.preventDefault(); s&&(s.textContent='Sending…');
+      try{ const fd=new FormData(f); const r=await fetch(url,{method:'POST',body:fd});
+        if(!r.ok) throw new Error('Network');
+        s&&(s.textContent='Done. We’ll reach out soon ✅'); f.reset(); window.scrollTo({top:0,behavior:'smooth'});
+      }catch(err){ s&&(s.textContent='Failed. Try again.'); }
+    });
+  }
   wireForm('#qqForm','/api/quote','#qqStatus');
   wireForm('#contactForm','/api/contact','#contactStatus');
   wireForm('#projForm','/api/project','#projStatus');
 
-  // BackTop show/hide
+  // Back-to-top inject + behavior
   const backTop=document.createElement('a'); backTop.id='backTop'; backTop.href='#home'; backTop.textContent='↑'; backTop.setAttribute('aria-label','Back to top'); document.body.appendChild(backTop);
   window.addEventListener('scroll',()=>{ backTop.style.display = window.scrollY>600 ? 'inline-flex':'none'; });
   </script>
 </body>
 </html>
+```
