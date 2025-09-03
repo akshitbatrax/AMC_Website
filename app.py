@@ -1,25 +1,13 @@
 # app.py — AMC Spark & Services
 # SMTP emails + JSON logging + Admin dashboard (auth + status/remarks/email + overdue alerts)
-# Improvements in this version:
-# - Safer cookies & configurable DEBUG
-# - Optional attachment delivery to admin (small files) with MIME detection
-# - Uploads served only behind admin auth (/admin/download/<filename>)
-# - Defensive checks, clearer errors, and small refactors
-# - Keeps your existing API contracts intact
 
-import os
-import re
-import ssl
-import smtplib
-import hashlib
-import json
-import mimetypes
+import os, re, ssl, smtplib, hashlib, json
 from datetime import datetime, timezone
 from email.message import EmailMessage
 
 from flask import (
     Flask, request, jsonify, send_from_directory, redirect,
-    url_for, session, abort, make_response
+    url_for, session
 )
 from werkzeug.utils import secure_filename
 
@@ -35,40 +23,35 @@ def env(key, default=None):
     return DOTENV.get(key) if DOTENV.get(key) is not None else os.getenv(key, default)
 
 # ---------------- Config ----------------
-PORT              = int(env("PORT", "5000"))
-STATIC_DIR        = env("STATIC_DIR", "static")
-UPLOAD_DIR        = env("UPLOAD_DIR", "uploads") or "uploads"
-INDEX_FILE        = env("INDEX_FILE", "static/index.html")  # default simplified
+PORT            = int(env("PORT", "5000"))
+STATIC_DIR      = env("STATIC_DIR", "static")
+UPLOAD_DIR      = env("UPLOAD_DIR", "uploads") or "uploads"
+INDEX_FILE      = env("INDEX_FILE", "static/index.html")  # default simplified
 
-SMTP_HOST         = env("SMTP_HOST", "smtpout.secureserver.net")
-SMTP_PORT         = int(env("SMTP_PORT", "465"))
-SMTP_SECURE       = (env("SMTP_SECURE", "ssl") or "ssl").lower()  # ssl | starttls
-EMAIL_USER        = env("EMAIL_USER")
-EMAIL_PASSWORD    = env("EMAIL_PASSWORD")
-SMTP_FROM         = env("SMTP_FROM", EMAIL_USER or "no-reply@localhost")
-ADMIN_EMAIL       = env("ADMIN_EMAIL", EMAIL_USER or "")
-HR_EMAIL          = env("HR_EMAIL", "")
-SMTP_DEBUG        = int(env("SMTP_DEBUG", "0"))
+SMTP_HOST       = env("SMTP_HOST", "smtpout.secureserver.net")
+SMTP_PORT       = int(env("SMTP_PORT", "465"))
+SMTP_SECURE     = (env("SMTP_SECURE", "ssl") or "ssl").lower()  # ssl | starttls
+EMAIL_USER      = env("EMAIL_USER")
+EMAIL_PASSWORD  = env("EMAIL_PASSWORD")
+SMTP_FROM       = env("SMTP_FROM", EMAIL_USER or "no-reply@localhost")
+ADMIN_EMAIL     = env("ADMIN_EMAIL", EMAIL_USER or "")
+HR_EMAIL        = env("HR_EMAIL", "")
+SMTP_DEBUG      = int(env("SMTP_DEBUG", "0"))
 
-MAX_EMAIL_MB      = int(env("MAX_EMAIL_MB", "19"))
-MAX_EMAIL_BYTES   = MAX_EMAIL_MB * 1024 * 1024
+MAX_EMAIL_MB    = int(env("MAX_EMAIL_MB", "19"))
+MAX_EMAIL_BYTES = MAX_EMAIL_MB * 1024 * 1024
 
-# If True, attach uploaded files to the admin email (up to MAX_EMAIL_BYTES total)
-ATTACH_TO_ADMIN   = (env("ATTACH_TO_ADMIN", "true").lower() in ("1", "true", "yes"))
-
-ALLOWED_EXTS      = {".pdf",".doc",".docx",".xls",".xlsx",".csv",".zip",".png",".jpg",".jpeg",".txt"}
+ALLOWED_EXTS    = {".pdf",".doc",".docx",".xls",".xlsx",".csv",".zip",".png",".jpg",".jpeg",".txt"}
 
 # Admin auth + logs/state
-SECRET_KEY        = env("SECRET_KEY", "please_change_me")
-ADMIN_USER_ID     = env("ADMIN_USER", "admin")
-ADMIN_PASS        = env("ADMIN_PASS", "password")
-SUBMIT_LOG        = env("SUBMIT_LOG", "submissions.jsonl")     # supports .jsonl and .json
-SUBMIT_STATE      = env("SUBMIT_STATE", "ticket_state.json")   # stores status/remarks/history
-ALERT_EMAIL       = env("ALERT_EMAIL", "info@amcspark.com")    # overdue alerts recipient
-DEBUG             = (env("FLASK_DEBUG", "true").lower() in ("1","true","yes"))
+SECRET_KEY      = env("SECRET_KEY", "please_change_me")
+ADMIN_USER_ID   = env("ADMIN_USER", "admin")
+ADMIN_PASS      = env("ADMIN_PASS", "password")
+SUBMIT_LOG      = env("SUBMIT_LOG", "submissions.jsonl")     # supports .jsonl and .json
+SUBMIT_STATE    = env("SUBMIT_STATE", "ticket_state.json")   # stores status/remarks/history
+ALERT_EMAIL     = env("ALERT_EMAIL", "info@amcspark.com")    # overdue alerts recipient
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(STATIC_DIR, exist_ok=True)
 
 # Guard: common misconfig with GoDaddy SMTP + Gmail sender
 if "secureserver.net" in (SMTP_HOST or "").lower() and EMAIL_USER and EMAIL_USER.lower().endswith("@gmail.com"):
@@ -77,11 +60,6 @@ if "secureserver.net" in (SMTP_HOST or "").lower() and EMAIL_USER and EMAIL_USER
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
 app.config["SECRET_KEY"] = SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"] = (MAX_EMAIL_MB + 5) * 1024 * 1024
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-# In production behind HTTPS, set this via env (FLASK_COOKIE_SECURE=1)
-if env("FLASK_COOKIE_SECURE", "0") in ("1","true","yes"):
-    app.config["SESSION_COOKIE_SECURE"] = True
 
 # ---------------- Branding ----------------
 BRAND = {
@@ -221,7 +199,7 @@ def client_ack_html(kind: str, name: str, ticket: str) -> str:
 def smtp_ready() -> bool:
     return bool(SMTP_HOST and EMAIL_USER and EMAIL_PASSWORD and SMTP_PORT > 0)
 
-def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=None, attachments: list | None = None):
+def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=None):
     if not EMAIL_USER:      raise RuntimeError("EMAIL_USER not set")
     if not EMAIL_PASSWORD:  raise RuntimeError("EMAIL_PASSWORD not set")
 
@@ -242,31 +220,8 @@ def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=
     if cc_list:    msg["Cc"] = ", ".join(cc_list)
     if reply_to:   msg["Reply-To"] = reply_to
 
-    # Body
     msg.set_content(_plain_from_html(html_body))
     msg.add_alternative(html_body, subtype="html")
-
-    # Optional attachments
-    total_bytes = 0
-    for path in (attachments or []):
-        try:
-            if not os.path.isfile(path):
-                continue
-            size = os.path.getsize(path)
-            if total_bytes + size > MAX_EMAIL_BYTES:
-                break
-            with open(path, "rb") as fh:
-                data = fh.read()
-            total_bytes += len(data)
-            ctype, enc = mimetypes.guess_type(path)
-            if ctype is None:
-                ctype = "application/octet-stream"
-            maintype, subtype = ctype.split("/", 1)
-            fname = os.path.basename(path)
-            msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=fname)
-        except Exception:
-            # Skip problematic attachment; continue sending email
-            continue
 
     if SMTP_SECURE == "ssl":
         context = ssl.create_default_context()
@@ -289,29 +244,11 @@ def notify_admin_and_client(kind: str, admin_fields: dict, *,
     ticket = _ticket(kind[:2], client_email or admin_fields.get("Email","") or "anon")
     admin_html  = admin_email_html(kind, admin_fields, attachments_saved or [], ticket)
     client_html = client_ack_html(kind, client_name, ticket)
-
-    # Optional attachment paths for admin email
-    attach_paths = []
-    if ATTACH_TO_ADMIN and attachments_saved:
-        for name in attachments_saved:
-            safe = _attach_safe(name)
-            path = os.path.join(UPLOAD_DIR, safe)
-            if os.path.isfile(path):
-                attach_paths.append(path)
-
     # send admin
-    send_email(
-        f"{kind} — Ticket {ticket}",
-        admin_html,
-        to=_recipients(),
-        reply_to=reply_to,
-        attachments=attach_paths
-    )
-
+    send_email(f"{kind} — Ticket {ticket}", admin_html, to=_recipients(), reply_to=reply_to)
     # send client ack
     if _valid_email(client_email):
         send_email(f"{kind} received — {ticket}", client_html, to=[client_email], reply_to=BRAND["email"])
-
     # log to JSONL
     _log_submission({
         "ticket": ticket,
@@ -461,19 +398,6 @@ def _maybe_send_overdue_alert(items: list[dict]) -> int:
             _save_state(state)
     return count
 
-# ---------------- Error handlers ----------------
-@app.errorhandler(413)
-def too_large(e):
-    return jsonify({"ok": False, "error": "Payload too large"}), 413
-
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({"ok": False, "error": "Not found"}), 404
-
-@app.errorhandler(500)
-def server_error(e):
-    return jsonify({"ok": False, "error": "Server error"}), 500
-
 # ---------------- API: health & smtp_ready ----------------
 @app.get("/api/health")
 def api_health():
@@ -574,7 +498,6 @@ def api_project():
         if not blob:
             continue
         if total + len(blob) > MAX_EMAIL_BYTES:
-            # Skip remaining files if size would exceed email cap
             continue
         path = os.path.join(UPLOAD_DIR, safe_name)
         with open(path, "wb") as wf:
@@ -627,18 +550,6 @@ def admin_dashboard_page():
     if not _is_authed():
         return redirect(url_for("admin_login_page"))
     return send_from_directory(STATIC_DIR, "admin.html")
-
-# ---------------- Admin: secure file download ----------------
-@app.get("/admin/download/<path:fname>")
-def admin_download(fname):
-    if not _is_authed():
-        return redirect(url_for("admin_login_page"))
-    safe = _attach_safe(fname)
-    path = os.path.join(UPLOAD_DIR, safe)
-    if not os.path.isfile(path):
-        abort(404)
-    # Force download
-    return send_from_directory(UPLOAD_DIR, safe, as_attachment=True)
 
 # ---------------- Admin APIs (protected) ----------------
 @app.get("/admin/api/tickets")
@@ -746,9 +657,7 @@ def admin_api_ticket_patch(ticket):
     state[ticket].setdefault("history", []).append(history_entry)
     _save_state(state)
 
-    # Return merged view
-    merged = _merge_ticket(item) if item else {"ticket": ticket, "status": state[ticket]["status"], "note": state[ticket]["note"], "history": state[ticket]["history"]}
-    resp = {"ok": True, "item": merged, "email_sent": email_sent}
+    resp = {"ok": True, "item": _merge_ticket(item), "email_sent": email_sent}
     if err_msg: resp["email_error"] = err_msg
     return jsonify(resp)
 
@@ -789,7 +698,7 @@ def serve_any(path):
 # ---------------- Run ----------------
 if __name__ == "__main__":
     app.logger.info(
-        "Starting on %s (smtp=%s, secure=%s, user=%s, attach_to_admin=%s)",
-        PORT, SMTP_HOST, SMTP_SECURE, _mask_user(EMAIL_USER), ATTACH_TO_ADMIN
+        "Starting on %s (smtp=%s, secure=%s, user=%s)",
+        PORT, SMTP_HOST, SMTP_SECURE, _mask_user(EMAIL_USER)
     )
-    app.run(host="0.0.0.0", port=PORT, debug=DEBUG)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
