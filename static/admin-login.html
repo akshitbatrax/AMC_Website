@@ -15,19 +15,25 @@
   <style>
     :root{--ink:#0f172a;--muted:#64748b;--bg:#0b1020;--panel:#0f172a;--line:#1f2f49;--brand:#11b5ff;--brand2:#22c55e}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb;margin:0}
-    .wrap{max-width:460px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(2,6,23,.35)}
-    h1{margin:0 0 6px;font-size:20px}
+    .wrap{max-width:460px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(2,6,23,.35);text-align:center}
+    h1{margin:8px 0 6px;font-size:20px}
     .sub{color:var(--muted);margin:0 0 10px}
-    .field{display:grid;gap:6px;margin:10px 0}
+    .field{display:grid;gap:6px;margin:10px 0;text-align:left}
     input{background:#0b1226;border:1px solid var(--line);border-radius:10px;padding:12px;color:#e5e7eb}
     .btn{display:inline-block;background:linear-gradient(90deg,var(--brand),var(--brand2));color:#00121b;font-weight:800;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
     small{color:#93a3bf}
-    .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .logo{display:block;margin:0 auto 12px;max-width:140px}
+    .top{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
     .top svg{width:28px;height:28px}
   </style>
 </head>
 <body data-page="admin-login">
   <div class="wrap">
+    <!-- Logo (clickable to amcspark.com) -->
+    <a href="https://amcspark.com" target="_blank">
+      <img src="/static/assets/logo.png" alt="AMC Spark Logo" class="logo">
+    </a>
+
     <div class="top">
       <svg viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#11b5ff"/><stop offset=".7" stop-color="#22c55e"/></linearGradient></defs>
@@ -36,6 +42,7 @@
       <h1>Admin Login</h1>
     </div>
     <p class="sub">Enter credentials to access the dashboard.</p>
+
     <form method="post" action="/admin/login" autocomplete="on">
       <div class="field">
         <label for="user">User</label>
@@ -47,7 +54,7 @@
       </div>
       <button class="btn" type="submit">Login</button>
       <div style="margin-top:10px">
-        <small>Hi! Spartans! </small>
+        <small>Hi! Spartans</small>
       </div>
     </form>
   </div>
@@ -55,4 +62,3 @@
   <!-- IMPORTANT: don't include /static/assets/admin.js on the login page -->
 </body>
 </html>
-
