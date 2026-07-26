@@ -242,19 +242,30 @@ function render(){
 
   <table style="margin-top:-1px"><tr class="pay-row"><td class="right" style="width:78%">AMOUNT PAYABLE</td><td class="right">${cur} ${fmt(grand)}</td></tr></table>
 
-  <table style="margin-top:auto"><tr>
-    <td style="width:52%">
-      <span class="lbl">Bank Details:</span> ${esc(g('bk_bank'))}<br>
-      <span class="lbl">Account Holder:</span> ${esc(g('bk_holder'))}<br>
-      <span class="lbl">Account #:</span> ${esc(g('bk_acc'))}<br>
-      <span class="lbl">IFSC Code:</span> ${esc(g('bk_ifsc'))}<br>
-      <span class="lbl">Branch:</span> ${esc(g('bk_branch'))}
-    </td>
-    <td class="stamp-cell">
-      ${imgs.stamp?`<img src="${imgs.stamp}">`:''}
-      <span class="sign">Authorized Signatory</span>
-    </td>
-  </tr></table>
+  <div style="margin-top:auto">
+    <table><tr><td class="terms-cell">
+      <span class="lbl">Terms &amp; Conditions:</span>
+      <ol>
+        <li>Payment is due by the date mentioned above; overdue amounts may attract interest @18% p.a.</li>
+        <li>Goods/services once delivered will not be taken back or exchanged.</li>
+        <li>Any discrepancy in this invoice must be reported within 7 days of receipt.</li>
+        <li>Subject to Faridabad (Haryana) jurisdiction only.</li>
+      </ol>
+    </td></tr></table>
+    <table style="margin-top:-1px"><tr>
+      <td style="width:52%">
+        <span class="lbl">Bank Details:</span> ${esc(g('bk_bank'))}<br>
+        <span class="lbl">Account Holder:</span> ${esc(g('bk_holder'))}<br>
+        <span class="lbl">Account #:</span> ${esc(g('bk_acc'))}<br>
+        <span class="lbl">IFSC Code:</span> ${esc(g('bk_ifsc'))}<br>
+        <span class="lbl">Branch:</span> ${esc(g('bk_branch'))}
+      </td>
+      <td class="stamp-cell">
+        ${imgs.stamp?`<img src="${imgs.stamp}">`:''}
+        <span class="sign">Authorized Signatory</span>
+      </td>
+    </tr></table>
+  </div>
   `;
   document.getElementById('invoice').innerHTML=html;
   scheduleAutosave();
