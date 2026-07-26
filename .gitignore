@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# AMC Spark app runtime state (generated on the server, not source)
+/submissions.jsonl
+/submissions.json
+/ticket_state.json
+/health_check_state.json
+/invoice_seq.json
+/invoice_seq.json.lock
+/uploads/*

@@ -128,6 +128,7 @@ const CE_SINGLE_LINE_FIELDS=['inv_no','inv_date','inv_pos','inv_due','b_name','b
       if(input)input.value=value;
       if(field==='inv_pos'){ onPosInput(); return; }
       if(field==='b_gstin'){ onGstinInput(); return; }
+      if(field==='inv_no')invNoAutoFilled=false; // edited directly on the preview - stop auto-suggesting over it
       render();
     }else if(el.dataset.item!==undefined&&el.dataset.itemfield){
       const idx=parseInt(el.dataset.item,10), key=el.dataset.itemfield;
@@ -311,6 +312,7 @@ function validateInvoice(){
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.classList&&t.classList.contains('field-invalid')&&t.value&&t.value.trim())t.classList.remove('field-invalid');
+  if(t.id==='inv_no')invNoAutoFilled=false; // user is typing their own number - stop auto-suggesting over it
 });
 
 /* ---------- shrink an element via zoom so it always fits within one A4 page ---------- */
@@ -404,6 +406,20 @@ async function downloadPDF(){
   const original=btn.innerHTML;
   btn.disabled=true; btn.innerHTML='⏳ Generating…';
   try{
+    // Ask the server to authoritatively assign the number now, at the actual
+    // moment of saving - this is what makes it collision-proof across
+    // devices, not just whatever was shown while drafting.
+    const assigned=await commitInvoiceNumber(invNoAutoFilled?'':g('inv_no'));
+    if(!assigned){
+      alert('Could not reach the server to assign an invoice number. Check your connection and try again.');
+      return;
+    }
+    if(assigned!==g('inv_no')){
+      document.getElementById('inv_no').value=assigned;
+      invNoAutoFilled=true;
+      render();
+    }
+
     const el=document.getElementById('invoice');
     const canvas=await html2canvas(el,{scale:3,backgroundColor:'#ffffff'});
     const {jsPDF}=window.jspdf;
@@ -421,7 +437,6 @@ async function downloadPDF(){
 
     const name=(g('inv_no')||'invoice').replace(/[^\w-]/g,'_');
     pdf.save(name+'.pdf');
-    commitInvoiceNumber(g('inv_no'),new Date());
     saveToHistory('completed');
   }catch(err){
     alert('Could not generate PDF: '+err.message);
@@ -441,6 +456,7 @@ function saveJSON(){
 }
 function applyInvoiceData(d){
   fields.forEach(k=>{if(d.fields&&k in d.fields)document.getElementById(k).value=d.fields[k];});
+  invNoAutoFilled=false; // loaded a real invoice number - preserve it rather than auto-suggesting over it
   items=d.items||[];
   if(d.imgs)Object.assign(imgs,d.imgs);
   document.getElementById('round_off').checked=!!d.round_off;
@@ -532,8 +548,6 @@ function openHistoryPanel(){ saveToHistory(); renderHistoryPanel(); document.get
 function closeHistoryPanel(){ document.getElementById('histOverlay').classList.remove('open'); document.getElementById('histDrawer').classList.remove('open'); }
 
 /* ---------- AMC (seller) static details ---------- */
-const INV_PREFIX='ASAS';
-const INV_SEQ_KEY='amc_invoice_seq';
 function seedSeller(){
   const set=(id,v)=>document.getElementById(id).value=v;
   set('s_name','AMC SPARK AND SERVICES');
@@ -553,50 +567,50 @@ function seedSeller(){
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDate(d){return String(d.getDate()).padStart(2,'0')+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
 function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
-function fyAndMonth(d){
-  const y=d.getFullYear(), m=d.getMonth()+1;
-  const fyStart=m>=4?y:y-1, fyEnd=fyStart+1;
-  return {fyShort:String(fyStart).slice(-2)+'-'+String(fyEnd).slice(-2),monAbbr:MONTHS[d.getMonth()].toUpperCase()};
-}
 
 /* ---------- incremental invoice number ----------
-   The sequence only advances once a bill is actually saved (Download PDF),
-   not just by opening a new draft or reloading the page - otherwise every
-   abandoned/untouched draft silently burns a number, leaving unexplained
-   gaps in the invoice sequence. */
-function getInvoiceSeq(){
-  try{return JSON.parse(localStorage.getItem(INV_SEQ_KEY)||'{}');}catch(e){return {};}
+   The sequence lives on the server (see /admin/api/invoice/* in app.py), not
+   in this browser's localStorage - otherwise every device/person generating
+   invoices had its own independent counter and could hand out duplicate
+   numbers. The number shown while drafting is just a preview; the real,
+   collision-proof assignment happens server-side at commit time (Download
+   PDF), which is also the point where the sequence actually advances -
+   abandoned/untouched drafts never burn a number. */
+let invNoAutoFilled=false; // false once the user has manually typed/edited it
+
+async function peekNextInvoiceNumber(){
+  try{
+    const r=await fetch('/admin/api/invoice/next-number');
+    if(!r.ok)return '';
+    const j=await r.json();
+    return j.ok?j.number:'';
+  }catch(e){ return ''; }
 }
-// Preview only - suggests what the next number would be, without reserving it.
-function peekNextInvoiceNumber(now){
-  const {fyShort,monAbbr}=fyAndMonth(now);
-  const key=fyShort+'_'+monAbbr;
-  const n=(getInvoiceSeq()[key]||0)+1;
-  return `${INV_PREFIX}/${fyShort}/${monAbbr}${String(n).padStart(4,'0')}`;
-}
-// Actually reserves a number - called only when a bill is genuinely saved.
-// Only ever ratchets forward, so re-saving the same invoice (same number)
-// never double-counts, and it can't move backwards from a manual edit.
-function commitInvoiceNumber(invNo,now){
-  const {fyShort,monAbbr}=fyAndMonth(now);
-  const key=fyShort+'_'+monAbbr;
-  const m=String(invNo||'').match(/(\d+)$/);
-  if(!m)return;
-  const n=parseInt(m[1],10);
-  const seq=getInvoiceSeq();
-  if(n>(seq[key]||0)){
-    seq[key]=n;
-    localStorage.setItem(INV_SEQ_KEY,JSON.stringify(seq));
-  }
+// Asks the server to authoritatively assign/confirm a number. Pass the
+// current field value when the user has hand-edited it (so a still-valid
+// manual number is respected); pass '' when it was just an auto-suggestion,
+// so the server always issues a fresh, guaranteed-free number.
+async function commitInvoiceNumber(currentValue){
+  try{
+    const r=await fetch('/admin/api/invoice/commit-number',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({invoice_number:currentValue||''})
+    });
+    if(!r.ok)return null;
+    const j=await r.json();
+    return j.ok?j.number:null;
+  }catch(e){ return null; }
 }
 
 /* ---------- start a new invoice: AMC stays static, number auto-increments ---------- */
-function newInvoice(){
+async function newInvoice(){
   if(document.activeElement)document.activeElement.blur(); // commit any in-progress preview edit first
   saveToHistory(); // archive the outgoing draft (if it has any content) before resetting
   seedSeller();
   const now=new Date();
-  document.getElementById('inv_no').value=peekNextInvoiceNumber(now);
+  document.getElementById('inv_no').value='…'; // placeholder while the server is asked for the next number
+  invNoAutoFilled=true;
   document.getElementById('inv_date').value=fmtDate(now);
   document.getElementById('inv_due').value=fmtDate(addDays(now,30));
   document.getElementById('inv_pos').value='';
@@ -609,6 +623,11 @@ function newInvoice(){
   items=[];
   renderItemsForm();
   render();
+  const suggested=await peekNextInvoiceNumber();
+  if(invNoAutoFilled){ // still untouched by the time the server responded
+    document.getElementById('inv_no').value=suggested;
+    render();
+  }
 }
 newInvoice();
 renderHistoryPanel();

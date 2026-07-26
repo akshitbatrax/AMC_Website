@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import os, re, ssl, smtplib, hashlib, hmac, json, uuid, threading, time
+import os, re, ssl, smtplib, hashlib, hmac, json, uuid, threading, time, fcntl
 from datetime import datetime, timezone, timedelta
 from email.message import EmailMessage
 from urllib.request import urlopen
@@ -75,6 +75,13 @@ ADMIN_PASS      = env("ADMIN_PASS", "password")
 SUBMIT_LOG      = os.path.join(BASE_DIR, env("SUBMIT_LOG", "submissions.jsonl"))     # supports .jsonl and .json
 SUBMIT_STATE    = os.path.join(BASE_DIR, env("SUBMIT_STATE", "ticket_state.json"))   # stores status/remarks/history
 ALERT_EMAIL     = env("ALERT_EMAIL", "info@amcspark.com")    # overdue alerts recipient
+
+# Invoice number sequence lives here (server-side, shared across every device/
+# person using the invoice generator) instead of each browser's own
+# localStorage, which let two different devices independently hand out the
+# same invoice number.
+INVOICE_SEQ_STATE = os.path.join(BASE_DIR, env("INVOICE_SEQ_STATE", "invoice_seq.json"))
+INVOICE_PREFIX     = env("INVOICE_PREFIX", "ASAS")
 
 HEALTH_CHECK_EMAIL = env("HEALTH_CHECK_EMAIL", "akshitbatrax@gmail.com")
 HEALTH_CHECK_STATE = os.path.join(BASE_DIR, env("HEALTH_CHECK_STATE", "health_check_state.json"))
@@ -703,6 +710,89 @@ def admin_api_ticket_patch(ticket):
     resp = {"ok": True, "item": _merge_ticket(item), "email_sent": email_sent}
     if err_msg: resp["email_error"] = err_msg
     return jsonify(resp)
+
+# ---------------- Invoice number sequence (server-side, shared) ----------------
+# Previously the invoice generator kept its own counter in each browser's
+# localStorage, so two different people/devices could each hand out the same
+# invoice number. This moves the counter here, guarded by a real OS file
+# lock so concurrent requests - even from separate gunicorn worker processes,
+# not just threads - can never race and issue a duplicate.
+_MONTH_ABBR = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
+
+def _invoice_fy_month_key(dt: datetime):
+    y, m = dt.year, dt.month
+    fy_start = y if m >= 4 else y - 1
+    fy_short = f"{str(fy_start)[-2:]}-{str(fy_start + 1)[-2:]}"
+    return fy_short, _MONTH_ABBR[m - 1]
+
+def _format_invoice_number(fy_short: str, mon_abbr: str, n: int) -> str:
+    return f"{INVOICE_PREFIX}/{fy_short}/{mon_abbr}{n:04d}"
+
+def _load_invoice_seq() -> dict:
+    if not os.path.exists(INVOICE_SEQ_STATE):
+        return {}
+    try:
+        with open(INVOICE_SEQ_STATE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _with_invoice_seq_lock(mutate_fn):
+    """Read-modify-write invoice_seq.json under an exclusive file lock on a
+    sidecar .lock file, so the read-then-write below is atomic across
+    concurrent requests regardless of how many worker processes are running."""
+    lock_path = INVOICE_SEQ_STATE + ".lock"
+    with open(lock_path, "a+") as lockf:
+        fcntl.flock(lockf, fcntl.LOCK_EX)
+        try:
+            seq = _load_invoice_seq()
+            result = mutate_fn(seq)
+            tmp = INVOICE_SEQ_STATE + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(seq, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, INVOICE_SEQ_STATE)
+            return result
+        finally:
+            fcntl.flock(lockf, fcntl.LOCK_UN)
+
+@app.get("/admin/api/invoice/next-number")
+def admin_api_invoice_peek():
+    """Preview only - does not reserve anything. Purely cosmetic, shown while
+    a draft is being filled in; the real assignment happens at commit time."""
+    guard = _require_authed_api()
+    if guard: return guard
+    fy_short, mon_abbr = _invoice_fy_month_key(_now_ist())
+    key = f"{fy_short}_{mon_abbr}"
+    n = _load_invoice_seq().get(key, 0) + 1
+    return jsonify({"ok": True, "number": _format_invoice_number(fy_short, mon_abbr, n)})
+
+@app.post("/admin/api/invoice/commit-number")
+def admin_api_invoice_commit():
+    """Authoritative assignment, called once a bill is actually saved (Download
+    PDF). If the caller's current number is still ahead of the server's
+    counter, it's honored (respects manual edits); otherwise - including the
+    case where another device already claimed it - the next free number is
+    issued instead, so two invoices can never end up with the same number."""
+    guard = _require_authed_api()
+    if guard: return guard
+    body = request.get_json(silent=True) or {}
+    requested = str(body.get("invoice_number") or "").strip()
+    m = re.search(r"(\d+)$", requested)
+    requested_n = int(m.group(1)) if m else None
+
+    fy_short, mon_abbr = _invoice_fy_month_key(_now_ist())
+    key = f"{fy_short}_{mon_abbr}"
+
+    def mutate(seq):
+        current = seq.get(key, 0)
+        if requested_n is not None and requested_n > current:
+            seq[key] = requested_n
+        else:
+            seq[key] = current + 1
+        return seq[key]
+
+    n = _with_invoice_seq_lock(mutate)
+    return jsonify({"ok": True, "number": _format_invoice_number(fy_short, mon_abbr, n)})
 
 # ---------------- Static / Index ----------------
 # Only ever serve files out of STATIC_DIR. Never serve arbitrary paths from
