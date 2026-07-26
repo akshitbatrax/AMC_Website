@@ -244,7 +244,7 @@ def _sender_name_and_email():
         return name, m.group(2).strip()
     return BRAND["name"], (SMTP_FROM or EMAIL_USER or "no-reply@localhost")
 
-def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=None):
+def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=None, inline_images=None):
     if not BREVO_API_KEY: raise RuntimeError("BREVO_API_KEY not set")
     if not EMAIL_USER:    raise RuntimeError("EMAIL_USER not set")
 
@@ -271,6 +271,14 @@ def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=
     if cc_list:  payload["cc"]  = [{"email": a} for a in cc_list]
     if bcc_list: payload["bcc"] = [{"email": a} for a in bcc_list]
     if reply_to: payload["replyTo"] = {"email": reply_to}
+    if inline_images:
+        # Reference each one in html_body as <img src="cid:{name}">. A base64
+        # data: URI looked simpler but Gmail (and several other webmail
+        # clients) silently strips inline base64 images from HTML emails as a
+        # security measure - real CID-referenced attachments are what actually
+        # renders inline across clients.
+        payload["attachment"] = [{"name": name, "content": base64.b64encode(data).decode("ascii")}
+                                  for name, data in inline_images]
 
     req = Request(
         BREVO_API_URL,
@@ -908,7 +916,7 @@ def _capture_site_screenshot_jpeg() -> bytes | None:
         img = Image.open(BytesIO(raw)).convert("RGB")
         max_w = 1280
         if img.width > max_w:
-            img = img.resize((max_w, round(img.height * max_w / img.width)), Image.Resampling.LANCZOS)
+            img = img.resize((max_w, round(img.height * max_w / img.width)), Image.LANCZOS)
 
         stamp = _now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
         text = f"Captured {stamp}"
@@ -930,13 +938,14 @@ def _capture_site_screenshot_jpeg() -> bytes | None:
 def send_daily_health_check_email():
     now_ist = _now_ist()
     screenshot = _capture_site_screenshot_jpeg()
+    inline_images = None
     if screenshot:
-        b64 = base64.b64encode(screenshot).decode("ascii")
         screenshot_html = f"""
 <p style="margin:16px 0 6px;font:700 13px Arial;color:{BRAND['ink']}">Live site screenshot</p>
-<img src="data:image/jpeg;base64,{b64}" alt="Live site screenshot" width="100%"
+<img src="cid:site-screenshot.jpg" alt="Live site screenshot" width="100%"
      style="max-width:100%;border:1px solid {BRAND['line']};border-radius:8px;display:block">
 """
+        inline_images = [("site-screenshot.jpg", screenshot)]
     else:
         screenshot_html = f'<p style="margin:16px 0 0;font:400 12.5px Arial;color:{BRAND["muted"]}">(Live screenshot unavailable this run.)</p>'
 
@@ -953,7 +962,8 @@ def send_daily_health_check_email():
     send_email(
         "✅ AMC Spark — Daily Health Check (Server Alive)",
         email_shell_html("Daily health check", inner),
-        to=[HEALTH_CHECK_EMAIL]
+        to=[HEALTH_CHECK_EMAIL],
+        inline_images=inline_images
     )
 
 def _daily_health_check_loop():
