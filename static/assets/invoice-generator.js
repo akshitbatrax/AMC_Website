@@ -421,6 +421,7 @@ async function downloadPDF(){
 
     const name=(g('inv_no')||'invoice').replace(/[^\w-]/g,'_');
     pdf.save(name+'.pdf');
+    commitInvoiceNumber(g('inv_no'),new Date());
     saveToHistory('completed');
   }catch(err){
     alert('Could not generate PDF: '+err.message);
@@ -558,16 +559,35 @@ function fyAndMonth(d){
   return {fyShort:String(fyStart).slice(-2)+'-'+String(fyEnd).slice(-2),monAbbr:MONTHS[d.getMonth()].toUpperCase()};
 }
 
-/* ---------- incremental invoice number ---------- */
-function nextInvoiceNumber(now){
+/* ---------- incremental invoice number ----------
+   The sequence only advances once a bill is actually saved (Download PDF),
+   not just by opening a new draft or reloading the page - otherwise every
+   abandoned/untouched draft silently burns a number, leaving unexplained
+   gaps in the invoice sequence. */
+function getInvoiceSeq(){
+  try{return JSON.parse(localStorage.getItem(INV_SEQ_KEY)||'{}');}catch(e){return {};}
+}
+// Preview only - suggests what the next number would be, without reserving it.
+function peekNextInvoiceNumber(now){
   const {fyShort,monAbbr}=fyAndMonth(now);
   const key=fyShort+'_'+monAbbr;
-  let seq={};
-  try{seq=JSON.parse(localStorage.getItem(INV_SEQ_KEY)||'{}');}catch(e){seq={};}
-  const n=(seq[key]||0)+1;
-  seq[key]=n;
-  localStorage.setItem(INV_SEQ_KEY,JSON.stringify(seq));
+  const n=(getInvoiceSeq()[key]||0)+1;
   return `${INV_PREFIX}/${fyShort}/${monAbbr}${String(n).padStart(4,'0')}`;
+}
+// Actually reserves a number - called only when a bill is genuinely saved.
+// Only ever ratchets forward, so re-saving the same invoice (same number)
+// never double-counts, and it can't move backwards from a manual edit.
+function commitInvoiceNumber(invNo,now){
+  const {fyShort,monAbbr}=fyAndMonth(now);
+  const key=fyShort+'_'+monAbbr;
+  const m=String(invNo||'').match(/(\d+)$/);
+  if(!m)return;
+  const n=parseInt(m[1],10);
+  const seq=getInvoiceSeq();
+  if(n>(seq[key]||0)){
+    seq[key]=n;
+    localStorage.setItem(INV_SEQ_KEY,JSON.stringify(seq));
+  }
 }
 
 /* ---------- start a new invoice: AMC stays static, number auto-increments ---------- */
@@ -576,7 +596,7 @@ function newInvoice(){
   saveToHistory(); // archive the outgoing draft (if it has any content) before resetting
   seedSeller();
   const now=new Date();
-  document.getElementById('inv_no').value=nextInvoiceNumber(now);
+  document.getElementById('inv_no').value=peekNextInvoiceNumber(now);
   document.getElementById('inv_date').value=fmtDate(now);
   document.getElementById('inv_due').value=fmtDate(addDays(now,30));
   document.getElementById('inv_pos').value='';
