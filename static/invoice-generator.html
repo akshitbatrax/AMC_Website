@@ -117,7 +117,7 @@
   .add-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(5,150,105,.4);}
   .add-btn:active{transform:translateY(0);}
   .hint{font-size:11px;color:var(--muted);margin-top:2px;}
-  .file-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
+  .file-row{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;}
   .file-row input[type=file]{
     width:auto;flex:1;padding:6px;font-size:11.5px;background:var(--field);cursor:pointer;
   }
@@ -170,6 +170,46 @@
     .form-panel{position:static;max-height:none;}
     .preview-panel{min-width:0;}
     .invoice{width:100%;min-height:0;}
+  }
+  @media(max-width:640px){
+    .layout{padding:12px;gap:14px;}
+    .form-panel{padding:6px 14px 16px;max-width:none;}
+    .preview-panel{padding:14px;}
+    header.appbar{padding:10px 12px;gap:6px;}
+    header.appbar h1{font-size:13px;}
+    header.appbar .brand-sub{font-size:10px;}
+    header.appbar button{padding:7px 10px;font-size:11.5px;}
+    .row{flex-direction:column;gap:0;}
+
+    /* Line items: the 6-column table is unusable at phone widths (each
+       column would be ~60px), so it's restyled into a stacked card per item
+       instead - same markup/JS (renderItemsForm() still emits a plain
+       <tr><td>...), just re-laid-out with CSS, no JS changes needed. */
+    .items-table thead{display:none;}
+    .items-table, .items-table tbody, .items-table tr, .items-table td{display:block;width:100%;}
+    .items-table tbody tr{
+      border:1.5px solid var(--border);border-radius:var(--radius-sm);
+      margin-bottom:10px;padding:10px 10px 8px;position:relative;
+    }
+    .items-table tbody tr td{padding:5px 0;}
+    .items-table tbody tr:after{content:"";display:table;clear:both;}
+    .items-table tbody tr td:nth-child(2),.items-table tbody tr td:nth-child(3),
+    .items-table tbody tr td:nth-child(4),.items-table tbody tr td:nth-child(5){
+      float:left;width:50%;box-sizing:border-box;
+    }
+    .items-table tbody tr td:nth-child(2),.items-table tbody tr td:nth-child(4){padding-right:5px;}
+    .items-table tbody tr td:nth-child(3),.items-table tbody tr td:nth-child(5){padding-left:5px;}
+    .items-table tbody tr td:nth-child(1):before{content:"Description";}
+    .items-table tbody tr td:nth-child(2):before{content:"HSN/SAC";}
+    .items-table tbody tr td:nth-child(3):before{content:"Qty";}
+    .items-table tbody tr td:nth-child(4):before{content:"Rate";}
+    .items-table tbody tr td:nth-child(5):before{content:"Per";}
+    .items-table tbody tr td:nth-child(1):before,.items-table tbody tr td:nth-child(2):before,
+    .items-table tbody tr td:nth-child(3):before,.items-table tbody tr td:nth-child(4):before,
+    .items-table tbody tr td:nth-child(5):before{
+      display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:2px;
+    }
+    .items-table tbody tr td:nth-child(6){position:absolute;top:8px;right:8px;width:auto;padding:0;}
   }
   @media print{
     body{background:#fff;}
