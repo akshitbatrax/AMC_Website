@@ -75,6 +75,27 @@
     }
   });
 
+  const btnLoginHealthCheck = $('#loginHealthCheckBtn');
+  btnLoginHealthCheck?.addEventListener('click', async ()=>{
+    btnLoginHealthCheck.disabled = true;
+    const original = btnLoginHealthCheck.textContent;
+    btnLoginHealthCheck.textContent = '⏳ Running…';
+    try{
+      const r = await fetch('/admin/api/login-healthcheck', { method:'POST' });
+      const data = await r.json().catch(()=>({}));
+      if (data?.ok) {
+        toast(`Login healthcheck: ${data.passed}/${data.total} passed` + (data.email_sent ? ' — emailed' : ' — email failed'));
+      } else {
+        toast('Failed: ' + (data?.error || r.status));
+      }
+    }catch(e){
+      console.error(e); toast('Network error');
+    }finally{
+      btnLoginHealthCheck.disabled = false;
+      btnLoginHealthCheck.textContent = original;
+    }
+  });
+
   // ---------- Drawer ----------
   const drawer = $('#drawer'), dClose = $('#dClose'), dStatus = $('#dStatus'), dNote = $('#dNote');
   const dEmail = $('#dEmail'), dSubject = $('#dSubject'), dSave = $('#dSave');

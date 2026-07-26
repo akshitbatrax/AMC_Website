@@ -106,6 +106,8 @@ BRAND = {
     "muted": "#475569",
     "bg": "#f6f8fb",
     "line": "#e5e7eb",
+    "ok": "#1b6e4a",
+    "danger": "#b3261e",
     "site": "https://www.amcspark.com/",
     "email": "info@amcspark.com",
     "phone": "+91 9220533011",
@@ -992,6 +994,104 @@ def admin_api_health_check_test():
     except Exception as e:
         app.logger.exception("manual health check email failed")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+# ---------------- Admin login healthcheck (server-side test-case runner) ----------------
+# Runs the same 5 login/logout/wrong-password test cases as
+# qa/admin_login_test.js, but via Flask's own test client instead of real
+# HTTP requests. This process runs behind a single gunicorn worker with no
+# threading (see the keep-alive comment above) - an actual outbound HTTP
+# call from a view function back to this same server would have nowhere to
+# be served and could hang the whole app until it timed out. The test
+# client runs the exact same view functions in-process over WSGI, with its
+# own independent cookie jar, so it doesn't touch the admin's real session
+# and carries zero risk of that deadlock. No screenshots/video, since there
+# is no browser in this environment - use the Node script locally for that.
+_LOGIN_HEALTHCHECK_WRONG_PASS = "Wr0ng-Test-Password!Not-Real"
+
+def _run_login_healthcheck():
+    results = []
+    def check(tc_id, name, passed, note=""):
+        results.append({"id": tc_id, "name": name, "passed": bool(passed), "note": note})
+
+    client = app.test_client()
+    REDIRECT_CODES = (301, 302, 303, 307, 308)
+
+    try:
+        r = client.get("/")
+        has_link = b"invoice-generator.html" in r.data
+        r2 = client.get("/invoice-generator.html")
+        loc2 = r2.headers.get("Location", "")
+        tc1 = has_link and r2.status_code in REDIRECT_CODES and loc2.endswith("/admin/login")
+        check("TC1", "Office Use Only link exists and requires login", tc1,
+              f"homepage links to it: {has_link}; unauthenticated visit -> {loc2 or r2.status_code}")
+
+        r = client.post("/admin/login", data={"user": ADMIN_USER_ID, "pass": ADMIN_PASS})
+        loc = r.headers.get("Location", "")
+        tc2 = r.status_code in REDIRECT_CODES and loc.endswith("/admin")
+        check("TC2", "Valid credentials log in successfully", tc2, f"redirected to {loc}")
+
+        client.get("/admin/logout")
+        r = client.get("/admin")
+        loc = r.headers.get("Location", "")
+        tc3 = r.status_code in REDIRECT_CODES and loc.endswith("/admin/login")
+        check("TC3", "Logout ends the session", tc3, f"/admin now redirects to {loc}")
+
+        r = client.post("/admin/login", data={"user": ADMIN_USER_ID, "pass": _LOGIN_HEALTHCHECK_WRONG_PASS})
+        loc = r.headers.get("Location", "")
+        tc4 = r.status_code in REDIRECT_CODES and "/admin/login" in loc
+        check("TC4", "Incorrect password is rejected", tc4, f"redirected to {loc}")
+
+        r = client.post("/admin/login", data={"user": ADMIN_USER_ID, "pass": ADMIN_PASS})
+        loc = r.headers.get("Location", "")
+        tc5 = r.status_code in REDIRECT_CODES and loc.endswith("/admin")
+        check("TC5", "Only the correct password is ever accepted (re-confirmed)", tc5, f"redirected to {loc}")
+    except Exception as e:
+        check("ERROR", "Test run crashed partway through", False, str(e))
+
+    return results
+
+def _login_healthcheck_email_html(results, passed, total):
+    def row(x):
+        status = "PASS" if x["passed"] else "FAIL"
+        color = BRAND["ok"] if x["passed"] else BRAND["danger"]
+        return f"""<tr>
+  <td style="padding:8px 10px;border-bottom:1px solid {BRAND['line']};font:800 12px Arial;color:{color};width:56px">{status}</td>
+  <td style="padding:8px 10px;border-bottom:1px solid {BRAND['line']};font:700 13px Arial;width:44px">{x['id']}</td>
+  <td style="padding:8px 10px;border-bottom:1px solid {BRAND['line']};font:400 13px Arial">{x['name']}<br><span style="color:{BRAND['muted']};font-size:11.5px">{x['note']}</span></td>
+</tr>"""
+    all_passed = passed == total
+    inner = f"""
+<h2 style="margin:0 0 8px;font:700 18px Arial;color:{BRAND['ink']}">{"✅" if all_passed else "⚠️"} Admin Login Healthcheck</h2>
+<p style="margin:0 0 12px;font:400 14px Arial;color:{BRAND['muted']}">Ran at {_now_ist().strftime('%Y-%m-%d %H:%M:%S')} IST. Result: <b>{passed}/{total} passed</b>.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid {BRAND['line']};border-radius:10px">
+{''.join(row(x) for x in results)}
+</table>
+<p style="margin:14px 0 0;font:400 12px Arial;color:{BRAND['muted']}">Runs entirely in-process against this server (Flask's test client) - no screenshots, since this environment has no browser.</p>
+"""
+    return email_shell_html("Admin login healthcheck", inner)
+
+@app.post("/admin/api/login-healthcheck")
+def admin_api_login_healthcheck():
+    guard = _require_authed_api()
+    if guard: return guard
+
+    results = _run_login_healthcheck()
+    passed = sum(1 for r in results if r["passed"])
+    total = len(results)
+
+    email_sent, email_err = False, None
+    try:
+        send_email(f"Admin Login Healthcheck — {passed}/{total} passed",
+                    _login_healthcheck_email_html(results, passed, total),
+                    to=[HEALTH_CHECK_EMAIL])
+        email_sent = True
+    except Exception as e:
+        app.logger.exception("login healthcheck email failed")
+        email_err = str(e)
+
+    resp = {"ok": True, "passed": passed, "total": total, "results": results, "email_sent": email_sent}
+    if email_err: resp["email_error"] = email_err
+    return jsonify(resp)
 
 # ---------------- Run ----------------
 if __name__ == "__main__":
