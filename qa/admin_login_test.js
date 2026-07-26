@@ -2,10 +2,12 @@
  * QA test: admin login flow on the live "Office Use Only" (invoice generator)
  * page - valid credentials succeed, logout actually ends the session, and
  * invalid credentials are rejected. Captures a timestamped, URL-stamped
- * screenshot at every step and can email the whole run (zipped) as a report.
+ * screenshot at every step, records a real-time video of the whole run (same
+ * live timestamp+URL banner burned into every frame), and can email the
+ * whole run (report + screenshots + video, zipped) as a report.
  *
  * Nothing here is deployed anywhere - it's a standalone script you run
- * against the live site from your own machine. It does not touch the repo's
+ * against a live site from your own machine. It does not touch the repo's
  * app code.
  *
  * Requires (env vars, never hardcode these):
@@ -21,6 +23,10 @@
  *                          --remote-debugging-port=9222 \
  *                          --user-data-dir=/tmp/qa-chrome-profile about:blank
  *   QA_OUT_DIR          (default ./qa-run-<timestamp> next to this script)
+ *   QA_RECORD_VIDEO     "0" to skip video recording (default "1"). Needs
+ *                        ffmpeg on PATH (e.g. `brew install ffmpeg`) - if
+ *                        ffmpeg isn't found, the run continues without a
+ *                        video rather than failing outright.
  *   QA_SEND_EMAIL       "1" to email the report (needs QA_BREVO_API_KEY,
  *                        QA_EMAIL_FROM, QA_EMAIL_TO)
  *   QA_BREVO_API_KEY, QA_EMAIL_FROM, QA_EMAIL_TO
@@ -30,21 +36,28 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
-const BASE_URL   = process.env.QA_BASE_URL || 'https://www.amcspark.com';
-const CDP_PORT    = process.env.QA_CDP_PORT || '9222';
-const ADMIN_USER  = process.env.QA_ADMIN_USER;
-const ADMIN_PASS  = process.env.QA_ADMIN_PASS;
-const WRONG_PASS  = 'Wr0ng-Test-Password!Not-Real';
-const OUT_DIR     = process.env.QA_OUT_DIR || path.join(__dirname, 'qa-run-' + new Date().toISOString().replace(/[:.]/g, '-'));
+const BASE_URL      = process.env.QA_BASE_URL || 'https://www.amcspark.com';
+const CDP_PORT       = process.env.QA_CDP_PORT || '9222';
+const ADMIN_USER     = process.env.QA_ADMIN_USER;
+const ADMIN_PASS     = process.env.QA_ADMIN_PASS;
+const WRONG_PASS     = 'Wr0ng-Test-Password!Not-Real';
+const OUT_DIR        = process.env.QA_OUT_DIR || path.join(__dirname, 'qa-run-' + new Date().toISOString().replace(/[:.]/g, '-'));
+const RECORD_VIDEO   = (process.env.QA_RECORD_VIDEO || '1') === '1';
 
 if (!ADMIN_USER || !ADMIN_PASS) {
   console.error('QA_ADMIN_USER and QA_ADMIN_PASS must be set in the environment (never hardcode credentials in this file).');
   process.exit(1);
 }
 
+const FRAMES_DIR = path.join(OUT_DIR, 'frames');
 fs.mkdirSync(OUT_DIR, { recursive: true });
+if (RECORD_VIDEO) fs.mkdirSync(FRAMES_DIR, { recursive: true });
+
+function hasFfmpeg() {
+  try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); return true; } catch { return false; }
+}
 
 const results = [];   // { id, name, passed, note }
 const shots = [];      // { file, label }
@@ -55,6 +68,11 @@ function record(id, name, passed, note) {
 }
 
 async function main() {
+  const ffmpegOk = RECORD_VIDEO && hasFfmpeg();
+  if (RECORD_VIDEO && !ffmpegOk) {
+    console.warn('QA_RECORD_VIDEO=1 but ffmpeg was not found on PATH - continuing without video (install with `brew install ffmpeg`).');
+  }
+
   const listRes = await fetch(`http://localhost:${CDP_PORT}/json/list`);
   const tabs = await listRes.json();
   const tab = tabs.find(t => t.type === 'page') || tabs[0];
@@ -62,10 +80,23 @@ async function main() {
   const ws = new WebSocket(tab.webSocketDebuggerUrl);
   let id = 0; const pending = new Map();
   await new Promise((resolve, reject) => { ws.addEventListener('open', resolve); ws.addEventListener('error', reject); });
+
+  let frameIndex = 0;
+  const frameTimestamps = [];
+
   ws.addEventListener('message', (ev) => {
     const msg = JSON.parse(ev.data);
     if (msg.id && pending.has(msg.id)) { const { resolve } = pending.get(msg.id); pending.delete(msg.id); resolve(msg.result); }
+    if (msg.method === 'Page.screencastFrame') {
+      const { data, sessionId } = msg.params;
+      const fname = path.join(FRAMES_DIR, String(frameIndex).padStart(6, '0') + '.jpg');
+      fs.writeFileSync(fname, Buffer.from(data, 'base64'));
+      frameTimestamps.push(Date.now());
+      frameIndex++;
+      send('Page.screencastFrameAck', { sessionId });
+    }
   });
+
   function send(method, params = {}) {
     const myId = ++id;
     return new Promise((resolve) => { pending.set(myId, { resolve }); ws.send(JSON.stringify({ id: myId, method, params })); });
@@ -82,29 +113,44 @@ async function main() {
 
   await send('Page.enable');
   await send('Runtime.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1.5, mobile: false });
+  const VIEW_W = 1280, VIEW_H = 900;
+  await send('Emulation.setDeviceMetricsOverride', { width: VIEW_W, height: VIEW_H, deviceScaleFactor: 1.5, mobile: false });
 
-  async function shot(label) {
-    const timestamp = new Date().toISOString();
-    const url = await ev('location.href');
-    await ev(`
-      (function(){
-        var old = document.getElementById('__qa_banner');
-        if (old) old.remove();
+  // Live timestamp+URL banner, re-injected automatically on every navigation
+  // (form submits/redirects included) - this is what makes both the
+  // screenshots AND every frame of the video independently verifiable.
+  await send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `(function(){
+      function ensureBanner(){
+        if (document.getElementById('__qa_banner')) return;
         var b = document.createElement('div');
         b.id = '__qa_banner';
-        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0b1220;color:#22e07a;font:700 13px/1.5 "SF Mono",Consolas,monospace;padding:8px 12px;white-space:pre-wrap;border-bottom:3px solid #22e07a';
-        b.textContent = 'QA TEST CAPTURE\\nTimestamp: ${timestamp}\\nURL: ' + location.href;
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0b1220;color:#22e07a;font:700 13px/1.5 "SF Mono",Consolas,monospace;padding:8px 12px;white-space:pre-wrap;border-bottom:3px solid #22e07a;pointer-events:none';
         document.documentElement.appendChild(b);
-      })()
-    `);
-    await new Promise(r => setTimeout(r, 150));
+        function tick(){
+          var el = document.getElementById('__qa_banner');
+          if (!el) return;
+          el.textContent = 'QA TEST RECORDING\\nTimestamp: ' + new Date().toISOString() + '\\nURL: ' + location.href;
+        }
+        tick();
+        setInterval(tick, 200);
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureBanner);
+      else ensureBanner();
+    })();`
+  });
+
+  if (ffmpegOk) {
+    await send('Page.startScreencast', { format: 'jpeg', quality: 70, maxWidth: VIEW_W, maxHeight: VIEW_H, everyNthFrame: 1 });
+  }
+
+  async function shot(label) {
+    await new Promise(r => setTimeout(r, 150)); // let the banner's tick() paint the latest timestamp
     const s = await send('Page.captureScreenshot', { format: 'png' });
     const file = path.join(OUT_DIR, label + '.png');
     fs.writeFileSync(file, Buffer.from(s.data, 'base64'));
-    await ev(`document.getElementById('__qa_banner')?.remove()`);
     shots.push({ file, label });
-    console.log('screenshot:', label, '| url:', url, '| t:', timestamp);
+    console.log('screenshot:', label, '| url:', await ev('location.href'));
   }
 
   // ---- TC1: reach the login page via the real "Office Use Only" journey ----
@@ -166,6 +212,13 @@ async function main() {
     'landed on ' + await ev('location.pathname'));
   await shot('06-correct-password-reconfirmed');
 
+  let videoPath = null;
+  if (ffmpegOk) {
+    await send('Page.stopScreencast');
+    await new Promise(r => setTimeout(r, 200)); // let any in-flight frame finish writing
+    videoPath = buildVideo(frameTimestamps);
+  }
+
   ws.close();
 
   // ---- report ----
@@ -173,6 +226,7 @@ async function main() {
   const summary = `AMC Spark - Admin Login QA Report
 Run at: ${new Date().toISOString()}
 Target: ${BASE_URL}
+Video: ${videoPath ? 'included (' + frameIndex + ' frames)' : (RECORD_VIDEO ? 'skipped - ffmpeg not found' : 'skipped (QA_RECORD_VIDEO=0)')}
 
 Result: ${passCount}/${results.length} test cases passed
 
@@ -182,11 +236,39 @@ ${results.map(r => `[${r.passed ? 'PASS' : 'FAIL'}] ${r.id} - ${r.name}${r.note 
   console.log('\n' + summary);
 
   const zipPath = OUT_DIR + '.zip';
-  execSync(`cd ${JSON.stringify(OUT_DIR)} && zip -j ${JSON.stringify(zipPath)} *.png report.txt`);
+  const zipInputs = ['*.png', 'report.txt'];
+  if (videoPath) zipInputs.push(path.basename(videoPath));
+  execSync(`cd ${JSON.stringify(OUT_DIR)} && zip -j ${JSON.stringify(zipPath)} ${zipInputs.join(' ')}`);
   console.log('Zipped report:', zipPath);
+  fs.rmSync(FRAMES_DIR, { recursive: true, force: true }); // raw frames aren't needed once the video is built
 
   if (process.env.QA_SEND_EMAIL === '1') {
     await sendReportEmail(summary, zipPath, passCount, results.length);
+  }
+
+  function buildVideo(timestamps) {
+    if (timestamps.length < 2) { console.warn('Not enough frames captured to build a video.'); return null; }
+    const listFile = path.join(OUT_DIR, 'frames.txt');
+    const lines = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      const frameFile = path.join('frames', String(i).padStart(6, '0') + '.jpg');
+      const dur = i < timestamps.length - 1 ? Math.max(0.04, (timestamps[i + 1] - timestamps[i]) / 1000) : 1.0;
+      lines.push(`file '${frameFile}'`);
+      lines.push(`duration ${dur.toFixed(3)}`);
+    }
+    // ffmpeg's concat demuxer ignores the last entry's duration - repeat the final frame so it still displays.
+    lines.push(`file '${path.join('frames', String(timestamps.length - 1).padStart(6, '0') + '.jpg')}'`);
+    fs.writeFileSync(listFile, lines.join('\n'));
+    const out = path.join(OUT_DIR, 'test-recording.mp4');
+    try {
+      execSync(`ffmpeg -y -f concat -safe 0 -i ${JSON.stringify(listFile)} -vf "scale=${VIEW_W}:-2,format=yuv420p" -movflags +faststart ${JSON.stringify(out)}`,
+        { cwd: OUT_DIR, stdio: 'pipe' });
+      console.log('Video built:', out);
+      return out;
+    } catch (e) {
+      console.error('ffmpeg failed, continuing without video:', e.message);
+      return null;
+    }
   }
 }
 
