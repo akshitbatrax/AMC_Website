@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GST Tax Invoice Generator</title>
+<style>
+  :root{
+    --bg-1:#eef1f8; --bg-2:#e6eaf5; --panel:#ffffff; --line:#000;
+    --accent:#4f46e5; --accent-2:#4338ca; --accent-soft:rgba(79,70,229,.10);
+    --ink:#0f172a; --muted:#64748b; --field:#f8fafc; --border:#e2e8f0;
+    --danger:#ef4444; --danger-2:#dc2626; --success:#059669; --success-2:#047857;
+    --radius:14px; --radius-sm:9px;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+    --shadow-md:0 4px 16px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.06);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.14),0 2px 6px rgba(15,23,42,.06);
+    --header-h:66px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:radial-gradient(1100px 600px at 100% -10%,#eef0fb 0%,var(--bg-1) 45%,var(--bg-2) 100%);
+    color:var(--ink);-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--accent-soft);color:var(--accent-2);}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#c7cee0;border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+  ::-webkit-scrollbar-thumb:hover{background:#aab3cc;background-clip:padding-box;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  header.appbar{
+    background:linear-gradient(115deg,#0b1220,#161f36 55%,#1c2748);color:#fff;
+    padding:12px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    position:sticky;top:0;z-index:30;min-height:var(--header-h);
+    box-shadow:0 4px 20px rgba(10,15,30,.25);border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  header.appbar .brand{display:flex;align-items:center;gap:10px;}
+  header.appbar .brand-badge{
+    display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,var(--accent),#8b5cf6);font-size:17px;box-shadow:var(--shadow-sm);
+  }
+  header.appbar .brand-text{display:flex;flex-direction:column;line-height:1.25;}
+  header.appbar h1{font-size:14.5px;margin:0;font-weight:700;letter-spacing:.01em;}
+  header.appbar .brand-sub{font-size:11px;color:#9aa4c4;font-weight:500;}
+  header.appbar .spacer{flex:1;}
+  header.appbar button{
+    background:rgba(255,255,255,.07);color:#fff;border:1px solid rgba(255,255,255,.10);
+    padding:8px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;transition:.15s ease;transition-property:background,transform,box-shadow,border-color;
+  }
+  header.appbar button:hover{background:rgba(255,255,255,.14);transform:translateY(-1px);}
+  header.appbar button:active{transform:translateY(0);}
+  header.appbar button.primary{
+    background:linear-gradient(135deg,var(--accent),#7c3aed);border-color:transparent;
+    box-shadow:0 4px 14px rgba(79,70,229,.45);
+  }
+  header.appbar button.primary:hover{box-shadow:0 6px 18px rgba(79,70,229,.55);}
+
+  .layout{display:flex;gap:22px;padding:22px;align-items:flex-start;flex-wrap:wrap;}
+
+  .form-panel{
+    flex:1 1 380px;max-width:520px;background:var(--panel);border-radius:var(--radius);
+    padding:6px 20px 20px;box-shadow:var(--shadow-md);border:1px solid rgba(15,23,42,.04);
+    position:sticky;top:calc(var(--header-h) + 22px);max-height:calc(100vh - var(--header-h) - 44px);
+    overflow-y:auto;
+  }
+  .form-panel h2{
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent-2);
+    margin:24px 0 12px;padding:14px 0 8px;font-weight:700;display:flex;align-items:center;gap:7px;
+    border-bottom:1px solid var(--border);position:sticky;top:-1px;background:var(--panel);z-index:2;
+  }
+  .form-panel h2:first-child{margin-top:0;}
+  .form-panel h2 .ic{font-size:13px;filter:saturate(1.15);}
+
+  label{display:block;font-size:12px;color:#475569;margin:10px 0 4px;font-weight:600;letter-spacing:.01em;}
+  .req{color:var(--danger);margin-left:2px;font-weight:700;}
+  .req-legend{font-size:11px;color:var(--muted);margin:16px 0 4px;}
+  .req-legend .req{margin-left:0;margin-right:3px;}
+  .validation-banner{
+    display:none;background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b;border-radius:var(--radius-sm);
+    padding:10px 12px;margin:0 0 16px;font-size:12.5px;line-height:1.5;
+  }
+  .validation-banner strong{display:block;margin-bottom:4px;font-size:12.5px;}
+  .validation-banner ul{margin:0;padding-left:18px;}
+  .validation-banner li{margin:2px 0;}
+  .field-invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3.5px rgba(239,68,68,.14)!important;background:#fef7f7!important;}
+  input,select,textarea{
+    width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    font-size:13px;background:var(--field);font-family:inherit;color:var(--ink);
+    transition:.15s ease;transition-property:border-color,box-shadow,background;
+  }
+  input:hover,select:hover,textarea:hover{border-color:#cbd5e1;}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3.5px var(--accent-soft);
+  }
+  textarea{resize:vertical;min-height:52px;line-height:1.4;}
+  input[type=checkbox]{width:auto;accent-color:var(--accent);width:15px;height:15px;vertical-align:-3px;margin-right:5px;cursor:pointer;}
+  label:has(input[type=checkbox]){display:flex;align-items:center;font-weight:500;cursor:pointer;user-select:none;}
+  .row{display:flex;gap:10px;}
+  .row>div{flex:1;min-width:0;}
+
+  .items-table{width:100%;border-collapse:separate;border-spacing:0;margin-top:8px;}
+  .items-table th{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;padding:0 4px 6px;font-weight:700;}
+  .items-table tbody tr td{padding:3px 3px;vertical-align:top;transition:background .12s;}
+  .items-table tbody tr:hover td{background:#f8f9fe;}
+  .items-table input,.items-table textarea{padding:6px 7px;font-size:12px;}
+  .del-btn{
+    background:#fef2f2;color:var(--danger);border:1.5px solid #fee2e2;border-radius:8px;width:28px;height:32px;
+    cursor:pointer;font-size:15px;line-height:1;transition:.15s ease;
+  }
+  .del-btn:hover{background:var(--danger);color:#fff;border-color:var(--danger);transform:scale(1.05);}
+  .add-btn{
+    background:linear-gradient(135deg,var(--success),var(--success-2));color:#fff;border:0;
+    padding:8px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;margin-top:10px;font-weight:700;
+    box-shadow:0 3px 10px rgba(5,150,105,.3);transition:.15s ease;
+  }
+  .add-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(5,150,105,.4);}
+  .add-btn:active{transform:translateY(0);}
+  .hint{font-size:11px;color:var(--muted);margin-top:2px;}
+  .file-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
+  .file-row input[type=file]{
+    width:auto;flex:1;padding:6px;font-size:11.5px;background:var(--field);cursor:pointer;
+  }
+  .file-row input[type=file]::file-selector-button{
+    background:var(--ink);color:#fff;border:0;padding:6px 11px;border-radius:6px;font-size:11.5px;
+    font-weight:600;cursor:pointer;margin-right:8px;transition:.15s;
+  }
+  .file-row input[type=file]::file-selector-button:hover{background:#1e293b;}
+  .file-row img{max-height:44px;max-width:120px;border:1px solid var(--border);border-radius:6px;background:#fff;padding:3px;}
+
+  /* ---------- PREVIEW ---------- */
+  .preview-panel{
+    flex:2 1 640px;min-width:640px;background:linear-gradient(180deg,#e9edf7,#dfe4f2);
+    border-radius:18px;padding:26px;box-shadow:inset 0 2px 6px rgba(15,23,42,.06),inset 0 0 0 1px rgba(15,23,42,.03);
+  }
+  .preview-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:0 2px;}
+  .preview-bar .dot{width:9px;height:9px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px rgba(5,150,105,.18);}
+  .preview-bar span{font-size:12px;font-weight:700;color:#475569;letter-spacing:.02em;}
+  .preview-bar .tag{margin-left:auto;font-size:10.5px;font-weight:700;color:var(--accent-2);background:var(--accent-soft);padding:3px 9px;border-radius:99px;letter-spacing:.03em;}
+
+  .invoice-wrap{background:#fff;box-shadow:var(--shadow-lg);border-radius:2px;overflow:hidden;}
+  .invoice{width:800px;min-height:1166px;margin:0 auto;background:#fff;color:#000;font-size:12px;border:1.5px solid var(--line);display:flex;flex-direction:column;}
+  .invoice table{border-collapse:collapse;width:100%;}
+  .invoice td,.invoice th{border:1px solid var(--line);padding:4px 6px;vertical-align:top;}
+  .inv-title{text-align:center;font-weight:700;font-size:14px;letter-spacing:.03em;padding:6px;}
+  .no-b{border:none!important;}
+  .seller-name{font-weight:700;}
+  .lbl{font-weight:700;}
+  .center{text-align:center;}
+  .right{text-align:right;}
+  .bold{font-weight:700;}
+  .logo-cell{width:170px;text-align:center;vertical-align:middle;}
+  .logo-cell img{max-width:150px;max-height:80px;}
+  .items thead th{background:#fff;font-weight:700;font-size:11px;text-align:center;}
+  .items .desc{white-space:pre-wrap;}
+  .words-row td{font-size:11.5px;}
+  .stamp-cell{position:relative;height:130px;}
+  .stamp-cell img{position:absolute;right:20px;top:6px;max-height:120px;max-width:150px;opacity:.9;}
+  .sign{position:absolute;right:14px;bottom:6px;font-size:11px;}
+  .pay-row td{font-weight:700;font-size:13px;}
+  .invoice [contenteditable="true"]{cursor:text;border-radius:2px;outline:1px dashed transparent;outline-offset:1px;transition:background .12s,outline-color .12s;}
+  .invoice [contenteditable="true"]:hover{background:rgba(79,70,229,.06);outline-color:rgba(79,70,229,.35);}
+  .invoice [contenteditable="true"]:focus{background:rgba(79,70,229,.10);outline:1.5px solid var(--accent);}
+  .invoice [contenteditable="true"]:empty:before{content:'\00a0\00a0\00a0\00a0\00a0\00a0';}
+  @media print{.invoice [contenteditable="true"]{outline:none!important;background:none!important;}}
+  @media(max-width:1000px){
+    .form-panel{position:static;max-height:none;}
+    .preview-panel{min-width:0;}
+    .invoice{width:100%;min-height:0;}
+  }
+  @media print{
+    body{background:#fff;}
+    header.appbar,.form-panel,.no-print{display:none!important;}
+    .layout{padding:0;display:block;}
+    .preview-panel{min-width:0;width:100%;background:none;border-radius:0;padding:0;box-shadow:none;}
+    .preview-bar{display:none;}
+    .invoice-wrap{box-shadow:none;border-radius:0;}
+    .invoice{width:100%;border:1.5px solid #000;min-height:1032px;}
+    @page{size:A4;margin:12mm;}
+  }
+
+  /* ---------- login gate ---------- */
+  .login-gate{
+    position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#0b1220,#161f36 55%,#1c2748);padding:20px;
+  }
+  .login-card{
+    background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:360px;text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);animation:loginIn .35s ease;
+  }
+  @keyframes loginIn{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:none;}}
+  .login-card.shake{animation:loginShake .35s;}
+  @keyframes loginShake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
+  .login-badge{
+    width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#8b5cf6);
+    display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:var(--shadow-md);
+  }
+  .login-card h2{margin:0 0 6px;font-size:17px;color:var(--ink);}
+  .login-card p{margin:0 0 18px;font-size:12.5px;color:var(--muted);}
+  .login-card input{text-align:center;font-size:14px;letter-spacing:.04em;}
+  .login-btn{
+    width:100%;margin-top:12px;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;border:0;
+    padding:11px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(79,70,229,.4);
+    transition:.15s ease;
+  }
+  .login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(79,70,229,.5);}
+  .login-error{display:none;color:var(--danger);font-size:12px;margin-top:10px;font-weight:600;}
+  @media print{.login-gate{display:none!important;}}
+
+  /* ---------- invoice history drawer ---------- */
+  .history-btn{position:relative;}
+  .history-badge{
+    position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:800;
+    min-width:16px;height:16px;border-radius:99px;display:none;align-items:center;justify-content:center;padding:0 4px;
+    box-shadow:0 0 0 2px #0b1220;
+  }
+  .hist-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:400;display:none;backdrop-filter:blur(2px);}
+  .hist-overlay.open{display:block;}
+  .hist-drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:#fff;z-index:401;
+    box-shadow:-12px 0 40px rgba(0,0,0,.25);transform:translateX(100%);transition:transform .25s ease;
+    display:flex;flex-direction:column;
+  }
+  .hist-drawer.open{transform:none;}
+  .hist-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .hist-head h3{margin:0;font-size:14.5px;flex:1;}
+  .hist-close{background:var(--field);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;}
+  .hist-body{flex:1;overflow-y:auto;padding:14px 16px;}
+  .hist-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:14px 0 8px;}
+  .hist-section-title:first-child{margin-top:0;}
+  .hist-empty{font-size:12px;color:var(--muted);padding:2px 2px 16px;}
+  .hist-item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;transition:.15s;cursor:pointer;}
+  .hist-item:hover{border-color:#c7d2fe;background:#fafaff;}
+  .hist-item .row1{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .hist-item .invno{font-weight:700;font-size:12.5px;color:var(--ink);}
+  .hist-item .amt{font-weight:700;font-size:12.5px;color:var(--accent-2);}
+  .hist-item .meta{font-size:11px;color:var(--muted);margin-top:3px;}
+  .hist-item .actions{display:flex;gap:6px;margin-top:8px;}
+  .hist-item .actions button{flex:1;font-size:11px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:600;transition:.15s;}
+  .hist-item .actions button.open-btn{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .hist-item .actions button.del-btn2{color:var(--danger);}
+  .hist-item .actions button.del-btn2:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+  .badge-pending{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;background:#fef3c7;color:#92400e;letter-spacing:.03em;text-transform:uppercase;}
+  .badge-completed{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;background:#dcfce7;color:#166534;letter-spacing:.03em;text-transform:uppercase;}
+  @media print{.hist-overlay,.hist-drawer{display:none!important;}}
+</style>
+</head>
+<body>
+<div class="login-gate" id="loginGate">
+  <div class="login-card" id="loginCard">
+    <div class="login-badge">🧾</div>
+    <h2>AMC Spark &amp; Services</h2>
+    <p>Enter the password to open the invoice generator</p>
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" autofocus>
+    <button id="loginBtn" class="login-btn">Unlock</button>
+    <div class="login-error" id="loginError">Incorrect password. Try again.</div>
+  </div>
+</div>
+<script>
+(function(){
+  var APP_PASSWORD='amcspark2026'; // change this line to set your own password
+  var AUTH_KEY='invoiceAppAuthed';
+  var gate=document.getElementById('loginGate');
+  var pass=document.getElementById('loginPass');
+  var btn=document.getElementById('loginBtn');
+  var err=document.getElementById('loginError');
+  var card=document.getElementById('loginCard');
+
+  if(localStorage.getItem(AUTH_KEY)==='1'){
+    gate.style.display='none';
+  }else{
+    pass.focus();
+  }
+
+  function tryUnlock(){
+    if(pass.value===APP_PASSWORD){
+      localStorage.setItem(AUTH_KEY,'1');
+      gate.style.display='none';
+    }else{
+      err.style.display='block';
+      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+      pass.value=''; pass.focus();
+    }
+  }
+  btn.addEventListener('click',tryUnlock);
+  pass.addEventListener('keydown',function(e){ if(e.key==='Enter')tryUnlock(); });
+
+  window.logoutApp=function(){
+    localStorage.removeItem(AUTH_KEY);
+    location.reload();
+  };
+})();
+</script>
+<header class="appbar">
+  <div class="brand">
+    <div class="brand-badge">🧾</div>
+    <div class="brand-text">
+      <h1>GST Tax Invoice Generator</h1>
+      <span class="brand-sub">AMC Spark &amp; Services</span>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="secondary history-btn" id="historyBtn" onclick="openHistoryPanel()">📁 Invoices<span class="history-badge" id="historyBadge"></span></button>
+  <button class="secondary" onclick="newInvoice()">➕ New invoice</button>
+  <button class="secondary" onclick="saveJSON()">💾 Save data</button>
+  <button class="secondary" onclick="document.getElementById('loadFile').click()">📂 Load data</button>
+  <input type="file" id="loadFile" accept="application/json" style="display:none" onchange="loadJSON(event)">
+  <button class="secondary" onclick="printPreview()">👁 Print Preview</button>
+  <button class="secondary" onclick="printInvoice()">🖨️ Print</button>
+  <button class="primary" id="pdfBtn" onclick="downloadPDF()">⬇️ Download PDF</button>
+  <button class="secondary" onclick="logoutApp()" title="Lock the app again">🔒 Log out</button>
+</header>
+
+<div class="hist-overlay" id="histOverlay" onclick="closeHistoryPanel()"></div>
+<div class="hist-drawer" id="histDrawer">
+  <div class="hist-head">
+    <h3>📁 Invoice history</h3>
+    <button class="hist-close" onclick="closeHistoryPanel()">✕</button>
+  </div>
+  <div class="hist-body" id="histBody"></div>
+</div>
+
+<div class="layout">
+  <!-- ================= FORM ================= -->
+  <div class="form-panel">
+    <div class="validation-banner" id="validationBanner"></div>
+    <div class="req-legend"><span class="req">*</span>Required — plus at least one line item with description, quantity and rate</div>
+    <h2><span class="ic">🏢</span>Seller (Your Company)</h2>
+    <label>Company name</label><input id="s_name" oninput="render()">
+    <label>GSTIN</label><input id="s_gstin" oninput="render()">
+    <label>Address</label><textarea id="s_addr" oninput="render()"></textarea>
+    <div class="row">
+      <div><label>Mobile</label><input id="s_mobile" oninput="render()"></div>
+      <div><label>Email</label><input id="s_email" oninput="render()"></div>
+    </div>
+    <label>Logo</label>
+    <div class="file-row">
+      <input type="file" accept="image/*" onchange="loadImg(event,'logo')">
+      <img id="logo_prev" style="display:none">
+    </div>
+
+    <h2><span class="ic">📄</span>Invoice details</h2>
+    <div class="row">
+      <div><label>Invoice # <span class="req">*</span></label><input id="inv_no" oninput="render()"></div>
+      <div><label>Invoice date <span class="req">*</span></label><input id="inv_date" oninput="render()"></div>
+    </div>
+    <div class="row">
+      <div><label>Place of supply <span class="req">*</span></label><input id="inv_pos" list="posOptions" oninput="onPosInput()">
+        <datalist id="posOptions">
+          <option value="01-JAMMU AND KASHMIR"><option value="02-HIMACHAL PRADESH"><option value="03-PUNJAB">
+          <option value="04-CHANDIGARH"><option value="05-UTTARAKHAND"><option value="06-HARYANA">
+          <option value="07-DELHI"><option value="08-RAJASTHAN"><option value="09-UTTAR PRADESH">
+          <option value="10-BIHAR"><option value="11-SIKKIM"><option value="12-ARUNACHAL PRADESH">
+          <option value="13-NAGALAND"><option value="14-MANIPUR"><option value="15-MIZORAM">
+          <option value="16-TRIPURA"><option value="17-MEGHALAYA"><option value="18-ASSAM">
+          <option value="19-WEST BENGAL"><option value="20-JHARKHAND"><option value="21-ODISHA">
+          <option value="22-CHHATTISGARH"><option value="23-MADHYA PRADESH"><option value="24-GUJARAT">
+          <option value="26-DADRA AND NAGAR HAVELI AND DAMAN AND DIU"><option value="27-MAHARASHTRA">
+          <option value="29-KARNATAKA"><option value="30-GOA"><option value="31-LAKSHADWEEP">
+          <option value="32-KERALA"><option value="33-TAMIL NADU"><option value="34-PUDUCHERRY">
+          <option value="35-ANDAMAN AND NICOBAR ISLANDS"><option value="36-TELANGANA">
+          <option value="37-ANDHRA PRADESH"><option value="38-LADAKH"><option value="97-OTHER TERRITORY">
+        </datalist>
+      </div>
+      <div><label>Due date</label><input id="inv_due" oninput="render()"></div>
+    </div>
+    <label>Reference line (optional)</label><input id="inv_ref" oninput="render()">
+
+    <h2><span class="ic">👤</span>Buyer (Bill To)</h2>
+    <label>Customer name <span class="req">*</span></label><input id="b_name" oninput="render()">
+    <label>GSTIN</label><input id="b_gstin" oninput="onGstinInput()">
+    <label>Billing address <span class="req">*</span></label><textarea id="b_addr" oninput="render()"></textarea>
+    <label><input type="checkbox" id="b_ship_diff" style="width:auto" onchange="render()"> Shipping address different</label>
+    <textarea id="b_ship" oninput="render()" placeholder="Shipping address" style="display:none"></textarea>
+
+    <h2><span class="ic">📦</span>Line items</h2>
+    <table class="items-table">
+      <thead><tr><th style="width:34%">Description</th><th>HSN</th><th>Qty</th><th>Rate</th><th>Per</th><th></th></tr></thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addItem()">+ Add item</button>
+
+    <h2><span class="ic">💰</span>Tax</h2>
+    <div class="row">
+      <div>
+        <label>Tax type</label>
+        <select id="tax_type" onchange="render()">
+          <option value="igst">IGST (inter-state)</option>
+          <option value="cgstsgst">CGST + SGST (intra-state)</option>
+          <option value="none">No tax</option>
+        </select>
+        <div class="hint">Auto-set from Place of supply &amp; buyer GSTIN (state code 06/Haryana → CGST+SGST, any other → IGST)</div>
+      </div>
+      <div><label>GST rate %</label><input id="tax_rate" type="number" value="18" oninput="render()"></div>
+    </div>
+    <label><input type="checkbox" id="round_off" style="width:auto" checked onchange="render()"> Round off total</label>
+    <div class="row">
+      <div><label>Currency symbol</label><input id="cur" value="₹" oninput="render()"></div>
+      <div><label>Currency word</label><input id="curword" value="INR" oninput="render()"></div>
+    </div>
+
+    <h2><span class="ic">🏦</span>Bank &amp; signature</h2>
+    <label>Bank name</label><input id="bk_bank" oninput="render()">
+    <label>Account holder</label><input id="bk_holder" oninput="render()">
+    <div class="row">
+      <div><label>Account #</label><input id="bk_acc" oninput="render()"></div>
+      <div><label>IFSC</label><input id="bk_ifsc" oninput="render()"></div>
+    </div>
+    <label>Branch</label><input id="bk_branch" oninput="render()">
+    <label>Stamp / signature image</label>
+    <div class="file-row">
+      <input type="file" accept="image/*" onchange="loadImg(event,'stamp')">
+      <img id="stamp_prev" style="display:none">
+    </div>
+    <label>Footer note</label><input id="footer_note" oninput="render()" value="E & O.E">
+  </div>
+
+  <!-- ================= PREVIEW ================= -->
+  <div class="preview-panel">
+    <div class="preview-bar no-print">
+      <span class="dot"></span>
+      <span>Live Preview</span>
+      <span style="font-weight:500;color:var(--muted);font-size:11.5px">← click any highlighted field below to edit it directly</span>
+      <span class="tag">A4</span>
+    </div>
+    <div class="invoice-wrap">
+      <div class="invoice" id="invoice"></div>
+    </div>
+  </div>
+</div>
+
+<!-- html2canvas 1.4.1 and jsPDF 2.5.1, self-hosted (no external/CDN requests at runtime) -->
+<script src="assets/html2canvas.min.js"></script>
+<script src="assets/jspdf.umd.min.js"></script>
+<script src="assets/invoice-generator.js"></script>
+</body>
+</html>

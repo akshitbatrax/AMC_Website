@@ -1,32 +1,49 @@
 # app.py — AMC Spark & Services
 # SMTP emails + JSON logging + Admin dashboard (auth + status/remarks/email + overdue alerts)
 
-import os, re, ssl, smtplib, hashlib, json
-from datetime import datetime, timezone
+from __future__ import annotations
+
+import os, re, ssl, smtplib, hashlib, hmac, json, uuid, threading, time
+from datetime import datetime, timezone, timedelta
 from email.message import EmailMessage
+from urllib.request import urlopen
+from urllib.error import URLError
 
 from flask import (
     Flask, request, jsonify, send_from_directory, redirect,
     url_for, session
 )
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import NotFound
+from typing import overload
 
 # ---------------- .env loader (optional) ----------------
-DOTENV = {}
+DOTENV: dict[str, str | None] = {}
 try:
     from dotenv import dotenv_values
     DOTENV = dotenv_values(os.path.join(os.getcwd(), ".env")) or {}
 except Exception:
     DOTENV = {}
 
-def env(key, default=None):
-    return DOTENV.get(key) if DOTENV.get(key) is not None else os.getenv(key, default)
+@overload
+def env(key: str, default: str) -> str: ...
+@overload
+def env(key: str, default: None = None) -> str | None: ...
+def env(key: str, default: str | None = None) -> str | None:
+    val = DOTENV.get(key)
+    return val if val is not None else os.getenv(key, default)
 
 # ---------------- Config ----------------
+# Anchor relative paths to this file's own directory, not the process's current
+# working directory. Without this, running the app from any other cwd (a
+# different launch script, working directory, etc.) makes every relative path
+# below resolve to the wrong place: static assets/images 403, uploads saved to
+# the wrong folder, submission logs written somewhere unexpected.
+BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
+
 PORT            = int(env("PORT", "5000"))
-STATIC_DIR      = env("STATIC_DIR", "static")
-UPLOAD_DIR      = env("UPLOAD_DIR", "uploads") or "uploads"
-INDEX_FILE      = env("INDEX_FILE", "static/index.html")  # default simplified
+STATIC_DIR      = os.path.join(BASE_DIR, env("STATIC_DIR", "static"))
+UPLOAD_DIR      = os.path.join(BASE_DIR, env("UPLOAD_DIR", "uploads") or "uploads")
 
 SMTP_HOST       = env("SMTP_HOST", "smtpout.secureserver.net")
 SMTP_PORT       = int(env("SMTP_PORT", "465"))
@@ -47,9 +64,12 @@ ALLOWED_EXTS    = {".pdf",".doc",".docx",".xls",".xlsx",".csv",".zip",".png",".j
 SECRET_KEY      = env("SECRET_KEY", "please_change_me")
 ADMIN_USER_ID   = env("ADMIN_USER", "admin")
 ADMIN_PASS      = env("ADMIN_PASS", "password")
-SUBMIT_LOG      = env("SUBMIT_LOG", "submissions.jsonl")     # supports .jsonl and .json
-SUBMIT_STATE    = env("SUBMIT_STATE", "ticket_state.json")   # stores status/remarks/history
+SUBMIT_LOG      = os.path.join(BASE_DIR, env("SUBMIT_LOG", "submissions.jsonl"))     # supports .jsonl and .json
+SUBMIT_STATE    = os.path.join(BASE_DIR, env("SUBMIT_STATE", "ticket_state.json"))   # stores status/remarks/history
 ALERT_EMAIL     = env("ALERT_EMAIL", "info@amcspark.com")    # overdue alerts recipient
+
+HEALTH_CHECK_EMAIL = env("HEALTH_CHECK_EMAIL", "akshitbatrax@gmail.com")
+HEALTH_CHECK_STATE = os.path.join(BASE_DIR, env("HEALTH_CHECK_STATE", "health_check_state.json"))
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -60,6 +80,9 @@ if "secureserver.net" in (SMTP_HOST or "").lower() and EMAIL_USER and EMAIL_USER
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
 app.config["SECRET_KEY"] = SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"] = (MAX_EMAIL_MB + 5) * 1024 * 1024
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = (env("SESSION_COOKIE_SECURE", "0") or "0") == "1"
 
 # ---------------- Branding ----------------
 BRAND = {
@@ -499,6 +522,7 @@ def api_project():
             continue
         if total + len(blob) > MAX_EMAIL_BYTES:
             continue
+        safe_name = f"{uuid.uuid4().hex[:8]}_{safe_name}"
         path = os.path.join(UPLOAD_DIR, safe_name)
         with open(path, "wb") as wf:
             wf.write(blob)
@@ -534,7 +558,7 @@ def admin_login_page():
 def admin_login_post():
     user = (request.form.get("user") or "").strip()
     pwd  = (request.form.get("pass") or "").strip()
-    if user == ADMIN_USER_ID and pwd == ADMIN_PASS:
+    if hmac.compare_digest(user, str(ADMIN_USER_ID)) and hmac.compare_digest(pwd, str(ADMIN_PASS)):
         session["authed"] = True
         session["who"] = ADMIN_USER_ID
         return redirect(url_for("admin_dashboard_page"))
@@ -604,7 +628,8 @@ def admin_api_ticket_patch(ticket):
     if guard: return guard
     body = request.get_json(silent=True) or {}
     status = (body.get("status") or "").lower().strip()
-    note   = (body.get("note") or "").strip()
+    note_provided = "note" in body
+    note = (body.get("note") or "").strip()
     email_client = bool(body.get("email_client"))
     email_subject = (body.get("email_subject") or f"Update on Ticket {ticket}").strip()
 
@@ -619,7 +644,7 @@ def admin_api_ticket_patch(ticket):
     old_status = state[ticket]["status"]
     if status:
         state[ticket]["status"] = status
-    if note is not None:
+    if note_provided:
         state[ticket]["note"] = note
 
     # for email we need client email from submissions
@@ -662,20 +687,11 @@ def admin_api_ticket_patch(ticket):
     return jsonify(resp)
 
 # ---------------- Static / Index ----------------
+# Only ever serve files out of STATIC_DIR. Never serve arbitrary paths from
+# the working directory (that used to expose app.py, .env, submissions.jsonl,
+# ticket_state.json, uploads/, etc. to anyone on the internet).
 @app.get("/")
 def root():
-    # Try INDEX_FILE (absolute/relative); else static/index.html; else OK
-    idx_path = INDEX_FILE
-    if os.path.isabs(idx_path):
-        if os.path.exists(idx_path):
-            directory, fname = os.path.split(idx_path)
-            return send_from_directory(directory, fname)
-    else:
-        abs_path = os.path.join(os.getcwd(), idx_path)
-        if os.path.exists(abs_path):
-            directory, fname = os.path.split(abs_path)
-            return send_from_directory(directory, fname)
-
     idx_static = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(idx_static):
         return send_from_directory(STATIC_DIR, "index.html")
@@ -683,17 +699,110 @@ def root():
 
 @app.get("/<path:path>")
 def serve_any(path):
-    # serve absolute path if exists
-    root_path = os.path.join(os.getcwd(), path)
-    if os.path.isfile(root_path):
-        directory, fname = os.path.split(root_path)
-        return send_from_directory(directory, fname)
-    # serve from static if exists
-    static_path = os.path.join(STATIC_DIR, path)
-    if os.path.isfile(static_path):
-        directory, fname = os.path.split(static_path)
-        return send_from_directory(directory, fname)
-    return "Not found", 404
+    try:
+        return send_from_directory(STATIC_DIR, path)
+    except NotFound:
+        return "Not found", 404
+
+# ---------------- Keep-alive (avoid Render free-tier spin-down) ----------------
+# Render's free web services spin down after ~15 min with no *inbound* HTTP
+# traffic. An internal timer alone can't prevent that — only a real request
+# hitting the public URL counts. This pings our own public health endpoint
+# every KEEP_ALIVE_INTERVAL seconds so the service never goes idle long enough
+# to sleep. Started at module level (not inside `if __name__ == "__main__"`)
+# so it also runs under gunicorn in production, not just `python app.py`.
+KEEP_ALIVE_INTERVAL = int(env("KEEP_ALIVE_INTERVAL", "300"))
+SELF_URL = env("SELF_URL") or env("RENDER_EXTERNAL_URL")
+
+def _keep_alive_loop():
+    if not SELF_URL:
+        return
+    ping_url = SELF_URL.rstrip("/") + "/api/health"
+    while True:
+        time.sleep(KEEP_ALIVE_INTERVAL)
+        try:
+            urlopen(ping_url, timeout=15).read()
+        except URLError as e:
+            app.logger.warning("keep-alive ping failed: %s", e)
+        except Exception as e:
+            app.logger.warning("keep-alive ping error: %s", e)
+
+if (env("KEEP_ALIVE", "1") or "1") == "1" and SELF_URL:
+    threading.Thread(target=_keep_alive_loop, daemon=True).start()
+
+# ---------------- Daily health-check email (6:00 AM IST) ----------------
+# India Standard Time has no DST, so a fixed UTC+5:30 offset is used instead of
+# zoneinfo — avoids depending on a tzdata package being present on the host.
+IST_OFFSET = timedelta(hours=5, minutes=30)
+
+def _now_ist() -> datetime:
+    return datetime.now(timezone.utc) + IST_OFFSET
+
+def _seconds_until_next_ist_6am() -> float:
+    now_ist = _now_ist()
+    target = now_ist.replace(hour=6, minute=0, second=0, microsecond=0)
+    if target <= now_ist:
+        target += timedelta(days=1)
+    return (target - now_ist).total_seconds()
+
+def _health_check_already_sent_today(date_str: str) -> bool:
+    if not os.path.exists(HEALTH_CHECK_STATE):
+        return False
+    try:
+        with open(HEALTH_CHECK_STATE, "r", encoding="utf-8") as f:
+            return json.load(f).get("last_sent_date") == date_str
+    except Exception:
+        return False
+
+def _mark_health_check_sent(date_str: str):
+    tmp = HEALTH_CHECK_STATE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"last_sent_date": date_str}, f)
+    os.replace(tmp, HEALTH_CHECK_STATE)
+
+def send_daily_health_check_email():
+    now_ist = _now_ist()
+    inner = f"""
+<h2 style="margin:0 0 8px;font:700 18px Arial;color:{BRAND['ink']}">✅ Daily Health Check</h2>
+<p style="margin:0 0 12px;font:400 14px Arial;color:{BRAND['muted']}">This is an automated confirmation that the AMC Spark website and server are up and running.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid {BRAND['line']};border-radius:10px">
+  {_row("Checked at (IST)", now_ist.strftime("%Y-%m-%d %H:%M:%S"))}
+  {_row("Server URL", SELF_URL or "(not configured)")}
+  {_row("SMTP", f"{SMTP_HOST} ({_mask_user(EMAIL_USER)})")}
+</table>
+"""
+    send_email(
+        "✅ AMC Spark — Daily Health Check (Server Alive)",
+        email_shell_html("Daily health check", inner),
+        to=[HEALTH_CHECK_EMAIL]
+    )
+
+def _daily_health_check_loop():
+    while True:
+        try:
+            time.sleep(_seconds_until_next_ist_6am())
+            date_str = _now_ist().strftime("%Y-%m-%d")
+            if _health_check_already_sent_today(date_str):
+                continue
+            send_daily_health_check_email()
+            _mark_health_check_sent(date_str)
+        except Exception as e:
+            app.logger.exception("daily health check failed: %s", e)
+            time.sleep(3600)  # back off an hour so a persistent failure can't spin-loop
+
+if (env("DAILY_HEALTH_CHECK", "1") or "1") == "1" and smtp_ready():
+    threading.Thread(target=_daily_health_check_loop, daemon=True).start()
+
+@app.post("/admin/api/health-check/test")
+def admin_api_health_check_test():
+    guard = _require_authed_api()
+    if guard: return guard
+    try:
+        send_daily_health_check_email()
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.exception("manual health check email failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 # ---------------- Run ----------------
 if __name__ == "__main__":

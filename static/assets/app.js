@@ -119,7 +119,7 @@ function tick(){
     p.x+=p.vx; p.y+=p.vy;
     if(p.x<0||p.x>W) p.vx*=-1; if(p.y<0||p.y>H) p.vy*=-1;
     ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*6); g.addColorStop(0,'rgba(17,181,255,.6)'); g.addColorStop(1,'rgba(17,181,255,0)');
+    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*6); g.addColorStop(0,'rgba(100,130,168,.45)'); g.addColorStop(1,'rgba(100,130,168,0)');
     ctx.fillStyle=g; ctx.fill();
   });
   requestAnimationFrame(tick);
@@ -146,7 +146,7 @@ function beep(type='success'){
     o.start(); o.stop(now+0.32);
   }catch{}
 }
-function showLoader(msg='Sending… good vibes only ✨'){
+function showLoader(msg='Sending your request…'){
   qs('.loader-txt').textContent = msg;
   loader.classList.add('show'); loader.setAttribute('aria-hidden','false');
 }
@@ -202,7 +202,7 @@ contactForm?.addEventListener('submit', async (e)=>{
   contactStatus.textContent='Sending…'; contactStatus.style.color='inherit'; showLoader('Sending your message…');
   try{
     const res = await postJSON('/api/contact', {name, email, message});
-    contactStatus.textContent = res?.ok ? 'Message sent ✅' : 'Sent (check inbox) ✅';
+    contactStatus.textContent = res?.ok ? 'Message sent.' : 'Sent — please check your inbox.';
     contactStatus.style.color = 'var(--ok)'; contactForm.reset(); beep('success'); toast('Message sent!');
   }catch(err){
     contactStatus.textContent = 'Could not send right now. Try email: info@amcspark.com';
@@ -235,10 +235,10 @@ qqForm?.addEventListener('submit', async (e)=>{
   const name = qs('#qqName').value.trim(), email = qs('#qqEmail').value.trim(), phone = qs('#qqPhone').value.trim();
   const ptype = qs('#qqType').value, voltage = qs('#qqVoltage').value, when = qs('#qqWhen').value, notes = qs('#qqNotes').value;
   if(!name || !validEmail(email) || !validPhone(phone) || !ptype){ qqStatus.textContent='Please complete required fields.'; qqStatus.style.color='var(--danger)'; return; }
-  qqStatus.textContent='Sending…'; qqStatus.style.color='inherit'; showLoader('Locking in your quote…');
+  qqStatus.textContent='Sending…'; qqStatus.style.color='inherit'; showLoader('Processing your quote request…');
   try{
     const res = await postJSON('/api/quote', {name, email, phone, ptype, voltage, when, notes});
-    qqStatus.textContent = res?.ok ? 'Thanks! We’ll reply within 24 hours. ✅' : 'Submitted ✅';
+    qqStatus.textContent = res?.ok ? 'Thank you. We will reply within 24 hours.' : 'Submitted.';
     qqStatus.style.color='var(--ok)'; qqForm.reset(); beep('success'); toast('Quote request sent!');
     setTimeout(hideQuote, 600);
   }catch(err){
@@ -278,7 +278,7 @@ projForm?.addEventListener('submit', async (e)=>{
   fd.append('_summary', JSON.stringify(summary));
   try{
     const res = await postForm('/api/project', fd);
-    projStatus.textContent = res?.ok ? 'Received. We will respond within 24 hours. ✅' : 'Submitted ✅';
+    projStatus.textContent = res?.ok ? 'Received. We will respond within 24 hours.' : 'Submitted.';
     projStatus.style.color='var(--ok)'; projForm.reset(); localStorage.removeItem('projAuto'); beep('success'); toast('Project request sent!');
     window.scrollTo({top:0, behavior:'smooth'});
   }catch(err){

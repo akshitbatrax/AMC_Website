@@ -6,14 +6,14 @@
   <title>AMC Spark — Admin Ticket Dashboard</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="/static/assets/admin.css" />
+  <link rel="stylesheet" href="assets/admin.css" />
   <!-- (optional) site-wide css -->
-  <link rel="stylesheet" href="/static/assets/app.css" />
+  <link rel="stylesheet" href="assets/app.css" />
 
   <!-- Charts -->
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <!-- App JS -->
-  <script defer src="/static/assets/admin.js"></script>
+  <script defer src="assets/admin.js"></script>
 </head>
 <body>
   <!-- Topbar -->
@@ -38,6 +38,9 @@
         <div class="sep"></div>
         <button class="item" id="exportCsv">⬇️ Export CSV</button>
         <button class="item" id="refreshBtn">🔄 Refresh</button>
+        <div class="sep"></div>
+        <a class="item" href="invoice-generator.html" target="_blank" rel="noopener"
+           style="display:block;box-sizing:border-box;text-decoration:none;color:inherit">🧾 Invoice Generator</a>
       </nav>
 
       <div class="filters">
