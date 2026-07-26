@@ -3,10 +3,14 @@
 
 from __future__ import annotations
 
-import os, re, hashlib, hmac, json, uuid, threading, time, fcntl
+import os, re, hashlib, hmac, json, uuid, threading, time, fcntl, base64
 from datetime import datetime, timezone, timedelta
+from io import BytesIO
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
+from urllib.parse import urlencode
+
+from PIL import Image, ImageDraw, ImageFont
 
 from flask import (
     Flask, request, jsonify, send_from_directory, redirect,
@@ -881,8 +885,61 @@ def _mark_health_check_sent(date_str: str):
         json.dump({"last_sent_date": date_str}, f)
     os.replace(tmp, HEALTH_CHECK_STATE)
 
+SCREENSHOT_API_URL = "https://api.microlink.io/"
+SCREENSHOT_TIMEOUT = int(env("SCREENSHOT_TIMEOUT", "25"))
+
+def _capture_site_screenshot_jpeg() -> bytes | None:
+    """Best-effort live screenshot of the public site, timestamped (IST) in the
+    image itself. Uses microlink.io - keyless, synchronous, no browser needed
+    on this box (Render's free tier can't comfortably run one in-process).
+    Returns None on any failure; the health check email must still send
+    without a screenshot rather than fail outright over a secondary feature."""
+    try:
+        api_url = SCREENSHOT_API_URL + "?" + urlencode({
+            "url": BRAND["site"], "screenshot": "true", "meta": "false"
+        })
+        with urlopen(api_url, timeout=SCREENSHOT_TIMEOUT) as resp:
+            meta = json.loads(resp.read().decode("utf-8"))
+        shot_url = meta["data"]["screenshot"]["url"]
+
+        with urlopen(shot_url, timeout=SCREENSHOT_TIMEOUT) as resp:
+            raw = resp.read()
+
+        img = Image.open(BytesIO(raw)).convert("RGB")
+        max_w = 1280
+        if img.width > max_w:
+            img = img.resize((max_w, round(img.height * max_w / img.width)), Image.Resampling.LANCZOS)
+
+        stamp = _now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
+        text = f"Captured {stamp}"
+        draw = ImageDraw.Draw(img, "RGBA")
+        font = ImageFont.load_default(size=22)
+        pad = 10
+        bbox = draw.textbbox((0, 0), text, font=font)
+        bar_h = (bbox[3] - bbox[1]) + pad * 2
+        draw.rectangle([0, img.height - bar_h, img.width, img.height], fill=(15, 23, 42, 190))
+        draw.text((pad, img.height - bar_h + pad // 2), text, font=font, fill=(255, 255, 255, 255))
+
+        out = BytesIO()
+        img.save(out, format="JPEG", quality=82)
+        return out.getvalue()
+    except Exception as e:
+        app.logger.warning("site screenshot capture failed: %s", e)
+        return None
+
 def send_daily_health_check_email():
     now_ist = _now_ist()
+    screenshot = _capture_site_screenshot_jpeg()
+    if screenshot:
+        b64 = base64.b64encode(screenshot).decode("ascii")
+        screenshot_html = f"""
+<p style="margin:16px 0 6px;font:700 13px Arial;color:{BRAND['ink']}">Live site screenshot</p>
+<img src="data:image/jpeg;base64,{b64}" alt="Live site screenshot" width="100%"
+     style="max-width:100%;border:1px solid {BRAND['line']};border-radius:8px;display:block">
+"""
+    else:
+        screenshot_html = f'<p style="margin:16px 0 0;font:400 12.5px Arial;color:{BRAND["muted"]}">(Live screenshot unavailable this run.)</p>'
+
     inner = f"""
 <h2 style="margin:0 0 8px;font:700 18px Arial;color:{BRAND['ink']}">✅ Daily Health Check</h2>
 <p style="margin:0 0 12px;font:400 14px Arial;color:{BRAND['muted']}">This is an automated confirmation that the AMC Spark website and server are up and running.</p>
@@ -891,6 +948,7 @@ def send_daily_health_check_email():
   {_row("Server URL", SELF_URL or "(not configured)")}
   {_row("Mailer", f"Brevo API ({_mask_user(EMAIL_USER)})")}
 </table>
+{screenshot_html}
 """
     send_email(
         "✅ AMC Spark — Daily Health Check (Server Alive)",
