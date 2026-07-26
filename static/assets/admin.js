@@ -14,10 +14,17 @@
 
   const htmlRoot = document.documentElement;
   const themeToggle = $('#themeToggle');
+  // Chromium has a quirk where <button> color doesn't reactively recompute
+  // from a CSS custom property when an ancestor's data-theme attribute
+  // changes live (a fresh page load already in that theme renders fine -
+  // it's specifically the live in-page switch that goes stale). Forcing a
+  // reflow immediately after flipping the attribute fixes it.
+  function forceReflow(){ document.body.style.display='none'; void document.body.offsetHeight; document.body.style.display=''; }
   themeToggle?.addEventListener('click', ()=>{
     const next = htmlRoot.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     htmlRoot.setAttribute('data-theme', next);
     try{ localStorage.setItem('amc-admin-theme', next); }catch{}
+    forceReflow();
   });
   // restore persisted theme
   try{
@@ -364,7 +371,10 @@
     if(ctxTrend){
       VIEW.charts.trend = new Chart(ctxTrend, {
         type:'line',
-        data:{ labels:days.map(d=>d.toISOString().slice(5,10)), datasets:[{ label:'Tickets', data:counts, tension:.3 }] },
+        data:{ labels:days.map(d=>d.toISOString().slice(5,10)), datasets:[{
+          label:'Tickets', data:counts, tension:.3,
+          borderColor:'#0f2a4a', backgroundColor:'rgba(15,42,74,.10)', fill:true, pointBackgroundColor:'#0f2a4a'
+        }] },
         options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
       });
     }
@@ -374,7 +384,7 @@
     if(ctxTypes){
       VIEW.charts.types = new Chart(ctxTypes, {
         type:'doughnut',
-        data:{ labels:Object.keys(byType), datasets:[{ data:Object.values(byType) }] },
+        data:{ labels:Object.keys(byType), datasets:[{ data:Object.values(byType), backgroundColor:['#0f2a4a','#b5852c','#51606f','#8ba3bd'] }] },
         options:{ plugins:{ legend:{ position:'bottom' } } }
       });
     }
@@ -385,7 +395,7 @@
     if(ctxStatus){
       VIEW.charts.status = new Chart(ctxStatus, {
         type:'doughnut',
-        data:{ labels:['Open','WIP','Resolved'], datasets:[{ data:[byStatus.open, byStatus.wip, byStatus.resolved] }] },
+        data:{ labels:['Open','WIP','Resolved'], datasets:[{ data:[byStatus.open, byStatus.wip, byStatus.resolved], backgroundColor:['#ff9500','#0ea5ff','#22c55e'] }] },
         options:{ plugins:{ legend:{ position:'bottom' } } }
       });
     }
@@ -405,9 +415,9 @@
         data:{
           labels:kinds,
           datasets:[
-            { label:'Open', data:ksData.open },
-            { label:'WIP', data:ksData.wip },
-            { label:'Resolved', data:ksData.resolved }
+            { label:'Open', data:ksData.open, backgroundColor:'#ff9500' },
+            { label:'WIP', data:ksData.wip, backgroundColor:'#0ea5ff' },
+            { label:'Resolved', data:ksData.resolved, backgroundColor:'#22c55e' }
           ]
         },
         options:{ responsive:true, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } } }

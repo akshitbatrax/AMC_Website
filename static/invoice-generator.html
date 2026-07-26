@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg-1:#eef1f8; --bg-2:#e6eaf5; --panel:#ffffff; --line:#000;
-    --accent:#4f46e5; --accent-2:#4338ca; --accent-soft:rgba(79,70,229,.10);
+    --accent:#0f2a4a; --accent-2:#173a61; --accent-soft:rgba(15,42,74,.08);
     --ink:#0f172a; --muted:#64748b; --field:#f8fafc; --border:#e2e8f0;
     --danger:#ef4444; --danger-2:#dc2626; --success:#059669; --success-2:#047857;
     --radius:14px; --radius-sm:9px;
@@ -37,7 +37,7 @@
   header.appbar .brand{display:flex;align-items:center;gap:10px;}
   header.appbar .brand-badge{
     display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
-    background:linear-gradient(135deg,var(--accent),#8b5cf6);font-size:17px;box-shadow:var(--shadow-sm);
+    background:var(--accent);font-size:17px;box-shadow:var(--shadow-sm);
   }
   header.appbar .brand-text{display:flex;flex-direction:column;line-height:1.25;}
   header.appbar h1{font-size:14.5px;margin:0;font-weight:700;letter-spacing:.01em;}
@@ -51,10 +51,10 @@
   header.appbar button:hover{background:rgba(255,255,255,.14);transform:translateY(-1px);}
   header.appbar button:active{transform:translateY(0);}
   header.appbar button.primary{
-    background:linear-gradient(135deg,var(--accent),#7c3aed);border-color:transparent;
-    box-shadow:0 4px 14px rgba(79,70,229,.45);
+    background:var(--accent);border-color:transparent;
+    box-shadow:0 4px 14px rgba(15,42,74,.45);
   }
-  header.appbar button.primary:hover{box-shadow:0 6px 18px rgba(79,70,229,.55);}
+  header.appbar button.primary:hover{background:var(--accent-2);box-shadow:0 6px 18px rgba(15,42,74,.55);}
 
   .layout{display:flex;gap:22px;padding:22px;align-items:flex-start;flex-wrap:wrap;}
 
@@ -162,8 +162,8 @@
   .terms-cell ol{margin:3px 0 0;padding-left:16px;}
   .terms-cell li{margin:1px 0;}
   .invoice [contenteditable="true"]{cursor:text;border-radius:2px;outline:1px dashed transparent;outline-offset:1px;transition:background .12s,outline-color .12s;}
-  .invoice [contenteditable="true"]:hover{background:rgba(79,70,229,.06);outline-color:rgba(79,70,229,.35);}
-  .invoice [contenteditable="true"]:focus{background:rgba(79,70,229,.10);outline:1.5px solid var(--accent);}
+  .invoice [contenteditable="true"]:hover{background:rgba(15,42,74,.06);outline-color:rgba(15,42,74,.35);}
+  .invoice [contenteditable="true"]:focus{background:rgba(15,42,74,.10);outline:1.5px solid var(--accent);}
   .invoice [contenteditable="true"]:empty:before{content:'\00a0\00a0\00a0\00a0\00a0\00a0';}
   @media print{.invoice [contenteditable="true"]{outline:none!important;background:none!important;}}
   @media(max-width:1000px){
