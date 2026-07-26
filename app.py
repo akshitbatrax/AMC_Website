@@ -1,13 +1,12 @@
 # app.py — AMC Spark & Services
-# SMTP emails + JSON logging + Admin dashboard (auth + status/remarks/email + overdue alerts)
+# Brevo API emails + JSON logging + Admin dashboard (auth + status/remarks/email + overdue alerts)
 
 from __future__ import annotations
 
-import os, re, ssl, smtplib, hashlib, hmac, json, uuid, threading, time, fcntl
+import os, re, hashlib, hmac, json, uuid, threading, time, fcntl
 from datetime import datetime, timezone, timedelta
-from email.message import EmailMessage
-from urllib.request import urlopen
-from urllib.error import URLError
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
 
 from flask import (
     Flask, request, jsonify, send_from_directory, redirect,
@@ -45,23 +44,22 @@ PORT            = int(env("PORT", "5000"))
 STATIC_DIR      = os.path.join(BASE_DIR, env("STATIC_DIR", "static"))
 UPLOAD_DIR      = os.path.join(BASE_DIR, env("UPLOAD_DIR", "uploads") or "uploads")
 
-SMTP_HOST       = env("SMTP_HOST", "smtpout.secureserver.net")
-SMTP_PORT       = int(env("SMTP_PORT", "465"))
-SMTP_SECURE     = (env("SMTP_SECURE", "ssl") or "ssl").lower()  # ssl | starttls
+# Email is sent via Brevo's HTTPS transactional API, not raw SMTP. GoDaddy's
+# SMTP (smtpout.secureserver.net) turned out to silently blackhole connections
+# from Render's network on both port 465 and 587 - confirmed via the actual
+# traceback, which failed at the raw TCP connect() stage, before TLS or auth
+# ever started. Plain HTTPS to a provider built for this (Brevo) sidesteps
+# that whole class of "some host blocks some SMTP port" problem.
+BREVO_API_KEY   = env("BREVO_API_KEY", "")
+BREVO_API_URL   = "https://api.brevo.com/v3/smtp/email"
 EMAIL_USER      = env("EMAIL_USER")
-EMAIL_PASSWORD  = env("EMAIL_PASSWORD")
-SMTP_FROM       = env("SMTP_FROM", EMAIL_USER or "no-reply@localhost")
+SMTP_FROM       = env("SMTP_FROM", EMAIL_USER or "no-reply@localhost")  # "Name <email>" - used as the Brevo sender
 ADMIN_EMAIL     = env("ADMIN_EMAIL", EMAIL_USER or "")
 HR_EMAIL        = env("HR_EMAIL", "")
-SMTP_DEBUG      = int(env("SMTP_DEBUG", "0"))
-# A hung SMTP connection (e.g. GoDaddy sometimes stalls instead of cleanly
-# rejecting connections from cloud/datacenter IPs like Render's) previously
-# used the smtplib default up to 60s *per connection*, and notify_admin_and_client
-# opens up to two connections back-to-back (admin + client ack) - worst case
-# ~120s, well past gunicorn's worker timeout, which kills the whole worker
-# before our own try/except can return a clean JSON error. Keep this comfortably
-# below the gunicorn --timeout so a real hang fails fast and gracefully instead.
-SMTP_TIMEOUT    = int(env("SMTP_TIMEOUT", "20"))
+# How long to wait for Brevo's API to respond before giving up. Kept
+# comfortably below the gunicorn --timeout so a real failure returns a clean
+# JSON error to the client instead of gunicorn killing the whole worker.
+EMAIL_SEND_TIMEOUT = int(env("EMAIL_SEND_TIMEOUT", "20"))
 
 MAX_EMAIL_MB    = int(env("MAX_EMAIL_MB", "19"))
 MAX_EMAIL_BYTES = MAX_EMAIL_MB * 1024 * 1024
@@ -87,10 +85,6 @@ HEALTH_CHECK_EMAIL = env("HEALTH_CHECK_EMAIL", "akshitbatrax@gmail.com")
 HEALTH_CHECK_STATE = os.path.join(BASE_DIR, env("HEALTH_CHECK_STATE", "health_check_state.json"))
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-# Guard: common misconfig with GoDaddy SMTP + Gmail sender
-if "secureserver.net" in (SMTP_HOST or "").lower() and EMAIL_USER and EMAIL_USER.lower().endswith("@gmail.com"):
-    raise RuntimeError("Use your domain mailbox with GoDaddy SMTP (e.g. info@amcspark.com), not Gmail.")
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
 app.config["SECRET_KEY"] = SECRET_KEY
@@ -233,13 +227,22 @@ def client_ack_html(kind: str, name: str, ticket: str) -> str:
 """
     return email_shell_html(f"{kind} received — Ticket {ticket}", inner)
 
-# ---------------- SMTP ----------------
+# ---------------- Email (Brevo HTTPS API) ----------------
 def smtp_ready() -> bool:
-    return bool(SMTP_HOST and EMAIL_USER and EMAIL_PASSWORD and SMTP_PORT > 0)
+    return bool(BREVO_API_KEY and EMAIL_USER)
+
+_FROM_HEADER_RE = re.compile(r'^\s*"?([^"<]*)"?\s*<([^>]+)>\s*$')
+
+def _sender_name_and_email():
+    m = _FROM_HEADER_RE.match(SMTP_FROM or "")
+    if m:
+        name = m.group(1).strip() or BRAND["name"]
+        return name, m.group(2).strip()
+    return BRAND["name"], (SMTP_FROM or EMAIL_USER or "no-reply@localhost")
 
 def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=None):
-    if not EMAIL_USER:      raise RuntimeError("EMAIL_USER not set")
-    if not EMAIL_PASSWORD:  raise RuntimeError("EMAIL_PASSWORD not set")
+    if not BREVO_API_KEY: raise RuntimeError("BREVO_API_KEY not set")
+    if not EMAIL_USER:    raise RuntimeError("EMAIL_USER not set")
 
     def norm_list(x):
         if not x: return []
@@ -250,29 +253,39 @@ def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=
     to_list  = norm_list(to)
     cc_list  = norm_list(cc)
     bcc_list = norm_list(bcc)
+    if not to_list:
+        raise RuntimeError("send_email: no recipients")
 
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"]    = SMTP_FROM
-    msg["To"]      = ", ".join(to_list)
-    if cc_list:    msg["Cc"] = ", ".join(cc_list)
-    if reply_to:   msg["Reply-To"] = reply_to
+    sender_name, sender_email = _sender_name_and_email()
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": addr} for addr in to_list],
+        "subject": subject,
+        "htmlContent": html_body,
+        "textContent": _plain_from_html(html_body),
+    }
+    if cc_list:  payload["cc"]  = [{"email": a} for a in cc_list]
+    if bcc_list: payload["bcc"] = [{"email": a} for a in bcc_list]
+    if reply_to: payload["replyTo"] = {"email": reply_to}
 
-    msg.set_content(_plain_from_html(html_body))
-    msg.add_alternative(html_body, subtype="html")
-
-    if SMTP_SECURE == "ssl":
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=SMTP_TIMEOUT) as s:
-            s.set_debuglevel(SMTP_DEBUG)
-            s.login(EMAIL_USER, EMAIL_PASSWORD)
-            s.send_message(msg)
-    else:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as s:
-            s.set_debuglevel(SMTP_DEBUG)
-            s.ehlo(); s.starttls(context=ssl.create_default_context()); s.ehlo()
-            s.login(EMAIL_USER, EMAIL_PASSWORD)
-            s.send_message(msg)
+    req = Request(
+        BREVO_API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=EMAIL_SEND_TIMEOUT) as resp:
+            resp.read()  # drain; Brevo returns 201 with a messageId on success
+    except HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")
+        raise RuntimeError(f"Brevo API error {e.code}: {detail}") from e
+    except URLError as e:
+        raise RuntimeError(f"Brevo API unreachable: {e.reason}") from e
 
 def notify_admin_and_client(kind: str, admin_fields: dict, *,
                             client_name: str, client_email: str,
@@ -442,8 +455,8 @@ def api_health():
     return jsonify({
         "ok": True,
         "time": datetime.utcnow().isoformat() + "Z",
-        "smtp_host": SMTP_HOST,
-        "secure": SMTP_SECURE,
+        "mailer": "brevo_api",
+        "email_ready": smtp_ready(),
         "smtp_user": _mask_user(EMAIL_USER),
         "static_dir": STATIC_DIR,
         "upload_dir": UPLOAD_DIR,
@@ -876,7 +889,7 @@ def send_daily_health_check_email():
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid {BRAND['line']};border-radius:10px">
   {_row("Checked at (IST)", now_ist.strftime("%Y-%m-%d %H:%M:%S"))}
   {_row("Server URL", SELF_URL or "(not configured)")}
-  {_row("SMTP", f"{SMTP_HOST} ({_mask_user(EMAIL_USER)})")}
+  {_row("Mailer", f"Brevo API ({_mask_user(EMAIL_USER)})")}
 </table>
 """
     send_email(
@@ -915,7 +928,7 @@ def admin_api_health_check_test():
 # ---------------- Run ----------------
 if __name__ == "__main__":
     app.logger.info(
-        "Starting on %s (smtp=%s, secure=%s, user=%s)",
-        PORT, SMTP_HOST, SMTP_SECURE, _mask_user(EMAIL_USER)
+        "Starting on %s (mailer=brevo_api, user=%s, ready=%s)",
+        PORT, _mask_user(EMAIL_USER), smtp_ready()
     )
     app.run(host="0.0.0.0", port=PORT, debug=True)
