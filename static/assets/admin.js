@@ -96,6 +96,26 @@
     }
   });
 
+  const btnLoginHealthCheckVideo = $('#loginHealthCheckVideoBtn');
+  btnLoginHealthCheckVideo?.addEventListener('click', async ()=>{
+    btnLoginHealthCheckVideo.disabled = true;
+    const original = btnLoginHealthCheckVideo.textContent;
+    btnLoginHealthCheckVideo.textContent = '⏳ Starting…';
+    try{
+      const r = await fetch('/admin/api/login-healthcheck/video', { method:'POST' });
+      const data = await r.json().catch(()=>({}));
+      // This only confirms the GitHub Actions run was queued, not that it
+      // finished - the actual screenshots/video show up by email a few
+      // minutes later once the workflow completes on GitHub's runner.
+      toast(data?.ok ? data.message : ('Failed: ' + (data?.error || r.status)), 6000);
+    }catch(e){
+      console.error(e); toast('Network error', 6000);
+    }finally{
+      btnLoginHealthCheckVideo.disabled = false;
+      btnLoginHealthCheckVideo.textContent = original;
+    }
+  });
+
   // ---------- Drawer ----------
   const drawer = $('#drawer'), dClose = $('#dClose'), dStatus = $('#dStatus'), dNote = $('#dNote');
   const dEmail = $('#dEmail'), dSubject = $('#dSubject'), dSave = $('#dSave');

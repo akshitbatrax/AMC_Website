@@ -88,6 +88,15 @@ INVOICE_PREFIX     = env("INVOICE_PREFIX", "ASAS")
 HEALTH_CHECK_EMAIL = env("HEALTH_CHECK_EMAIL", "akshitbatrax@gmail.com")
 HEALTH_CHECK_STATE = os.path.join(BASE_DIR, env("HEALTH_CHECK_STATE", "health_check_state.json"))
 
+# GitHub Actions dispatch - lets the admin "Login Healthcheck (Video)" button
+# kick off qa/admin_login_test.js on a GitHub-hosted runner, since this
+# server has no browser to record screenshots/video itself (see the
+# login-healthcheck workflow file for what actually runs).
+GITHUB_REPO           = env("GITHUB_REPO", "akshitbatrax/AMC_Website")
+GITHUB_WORKFLOW_FILE  = env("GITHUB_WORKFLOW_FILE", "login-healthcheck.yml")
+GITHUB_DISPATCH_REF   = env("GITHUB_DISPATCH_REF", "uat")
+GITHUB_DISPATCH_TOKEN = env("GITHUB_DISPATCH_TOKEN", "")
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
@@ -1092,6 +1101,54 @@ def admin_api_login_healthcheck():
     resp = {"ok": True, "passed": passed, "total": total, "results": results, "email_sent": email_sent}
     if email_err: resp["email_error"] = email_err
     return jsonify(resp)
+
+def _dispatch_github_workflow(base_url: str):
+    """Kick off the login-healthcheck GitHub Actions workflow (screenshots +
+    video, on a real runner) via workflow_dispatch. Fire-and-forget: GitHub
+    queues the run and answers 204 immediately, well before the workflow
+    itself (which takes a couple of minutes) finishes."""
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/workflows/{GITHUB_WORKFLOW_FILE}/dispatches"
+    payload = {"ref": GITHUB_DISPATCH_REF, "inputs": {"base_url": base_url}}
+    req = Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {GITHUB_DISPATCH_TOKEN}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Content-Type": "application/json",
+            "User-Agent": "amc-spark-admin-dashboard",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=15) as resp:
+            resp.read()
+    except HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")
+        raise RuntimeError(f"GitHub API error {e.code}: {detail}") from e
+    except URLError as e:
+        raise RuntimeError(f"GitHub API unreachable: {e.reason}") from e
+
+@app.post("/admin/api/login-healthcheck/video")
+def admin_api_login_healthcheck_video():
+    guard = _require_authed_api()
+    if guard: return guard
+
+    if not GITHUB_DISPATCH_TOKEN:
+        return jsonify({"ok": False, "error": "GITHUB_DISPATCH_TOKEN not configured on this server"}), 500
+
+    base_url = request.url_root.rstrip("/")
+    try:
+        _dispatch_github_workflow(base_url)
+    except Exception as e:
+        app.logger.exception("login healthcheck video dispatch failed")
+        return jsonify({"ok": False, "error": str(e)}), 502
+
+    return jsonify({
+        "ok": True,
+        "message": f"Started - testing {base_url}. Screenshots + video will land at {HEALTH_CHECK_EMAIL} in a few minutes.",
+    })
 
 # ---------------- Run ----------------
 if __name__ == "__main__":
