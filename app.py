@@ -54,6 +54,14 @@ SMTP_FROM       = env("SMTP_FROM", EMAIL_USER or "no-reply@localhost")
 ADMIN_EMAIL     = env("ADMIN_EMAIL", EMAIL_USER or "")
 HR_EMAIL        = env("HR_EMAIL", "")
 SMTP_DEBUG      = int(env("SMTP_DEBUG", "0"))
+# A hung SMTP connection (e.g. GoDaddy sometimes stalls instead of cleanly
+# rejecting connections from cloud/datacenter IPs like Render's) previously
+# used the smtplib default up to 60s *per connection*, and notify_admin_and_client
+# opens up to two connections back-to-back (admin + client ack) - worst case
+# ~120s, well past gunicorn's worker timeout, which kills the whole worker
+# before our own try/except can return a clean JSON error. Keep this comfortably
+# below the gunicorn --timeout so a real hang fails fast and gracefully instead.
+SMTP_TIMEOUT    = int(env("SMTP_TIMEOUT", "20"))
 
 MAX_EMAIL_MB    = int(env("MAX_EMAIL_MB", "19"))
 MAX_EMAIL_BYTES = MAX_EMAIL_MB * 1024 * 1024
@@ -248,12 +256,12 @@ def send_email(subject: str, html_body: str, *, to, reply_to=None, cc=None, bcc=
 
     if SMTP_SECURE == "ssl":
         context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=60) as s:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=SMTP_TIMEOUT) as s:
             s.set_debuglevel(SMTP_DEBUG)
             s.login(EMAIL_USER, EMAIL_PASSWORD)
             s.send_message(msg)
     else:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as s:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as s:
             s.set_debuglevel(SMTP_DEBUG)
             s.ehlo(); s.starttls(context=ssl.create_default_context()); s.ehlo()
             s.login(EMAIL_USER, EMAIL_PASSWORD)
