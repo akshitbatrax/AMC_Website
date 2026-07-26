@@ -583,6 +583,16 @@ def admin_dashboard_page():
         return redirect(url_for("admin_login_page"))
     return send_from_directory(STATIC_DIR, "admin.html")
 
+# The invoice generator used to be gated only by a password hardcoded in its
+# own JS (readable by anyone via view-source, and the page content was
+# downloaded regardless of whether it was "unlocked"). Gate it server-side
+# with the same admin session instead - a real access control, not a UI trick.
+@app.get("/invoice-generator.html")
+def invoice_generator_page():
+    if not _is_authed():
+        return redirect(url_for("admin_login_page"))
+    return send_from_directory(STATIC_DIR, "invoice-generator.html")
+
 # ---------------- Admin APIs (protected) ----------------
 @app.get("/admin/api/tickets")
 def admin_api_tickets():

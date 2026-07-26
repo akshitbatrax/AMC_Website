@@ -182,34 +182,6 @@
     @page{size:A4;margin:12mm;}
   }
 
-  /* ---------- login gate ---------- */
-  .login-gate{
-    position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg,#0b1220,#161f36 55%,#1c2748);padding:20px;
-  }
-  .login-card{
-    background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:360px;text-align:center;
-    box-shadow:0 20px 60px rgba(0,0,0,.4);animation:loginIn .35s ease;
-  }
-  @keyframes loginIn{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:none;}}
-  .login-card.shake{animation:loginShake .35s;}
-  @keyframes loginShake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
-  .login-badge{
-    width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#8b5cf6);
-    display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:var(--shadow-md);
-  }
-  .login-card h2{margin:0 0 6px;font-size:17px;color:var(--ink);}
-  .login-card p{margin:0 0 18px;font-size:12.5px;color:var(--muted);}
-  .login-card input{text-align:center;font-size:14px;letter-spacing:.04em;}
-  .login-btn{
-    width:100%;margin-top:12px;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;border:0;
-    padding:11px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(79,70,229,.4);
-    transition:.15s ease;
-  }
-  .login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(79,70,229,.5);}
-  .login-error{display:none;color:var(--danger);font-size:12px;margin-top:10px;font-weight:600;}
-  @media print{.login-gate{display:none!important;}}
-
   /* ---------- invoice history drawer ---------- */
   .history-btn{position:relative;}
   .history-badge{
@@ -249,51 +221,6 @@
 </style>
 </head>
 <body>
-<div class="login-gate" id="loginGate">
-  <div class="login-card" id="loginCard">
-    <div class="login-badge">🧾</div>
-    <h2>AMC Spark &amp; Services</h2>
-    <p>Enter the password to open the invoice generator</p>
-    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" autofocus>
-    <button id="loginBtn" class="login-btn">Unlock</button>
-    <div class="login-error" id="loginError">Incorrect password. Try again.</div>
-  </div>
-</div>
-<script>
-(function(){
-  var APP_PASSWORD='amcspark2026'; // change this line to set your own password
-  var AUTH_KEY='invoiceAppAuthed';
-  var gate=document.getElementById('loginGate');
-  var pass=document.getElementById('loginPass');
-  var btn=document.getElementById('loginBtn');
-  var err=document.getElementById('loginError');
-  var card=document.getElementById('loginCard');
-
-  if(localStorage.getItem(AUTH_KEY)==='1'){
-    gate.style.display='none';
-  }else{
-    pass.focus();
-  }
-
-  function tryUnlock(){
-    if(pass.value===APP_PASSWORD){
-      localStorage.setItem(AUTH_KEY,'1');
-      gate.style.display='none';
-    }else{
-      err.style.display='block';
-      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
-      pass.value=''; pass.focus();
-    }
-  }
-  btn.addEventListener('click',tryUnlock);
-  pass.addEventListener('keydown',function(e){ if(e.key==='Enter')tryUnlock(); });
-
-  window.logoutApp=function(){
-    localStorage.removeItem(AUTH_KEY);
-    location.reload();
-  };
-})();
-</script>
 <header class="appbar">
   <div class="brand">
     <div class="brand-badge">🧾</div>
@@ -311,7 +238,7 @@
   <button class="secondary" onclick="printPreview()">👁 Print Preview</button>
   <button class="secondary" onclick="printInvoice()">🖨️ Print</button>
   <button class="primary" id="pdfBtn" onclick="downloadPDF()">⬇️ Download PDF</button>
-  <button class="secondary" onclick="logoutApp()" title="Lock the app again">🔒 Log out</button>
+  <button class="secondary" onclick="location.href='/admin/logout'" title="Log out and lock the app">🔒 Log out</button>
 </header>
 
 <div class="hist-overlay" id="histOverlay" onclick="closeHistoryPanel()"></div>
