@@ -51,6 +51,23 @@
   btnRefresh?.addEventListener('click', fetchAndRender);
   btnExportCsv?.addEventListener('click', ()=> exportCsv(VIEW.items));
 
+  const btnHealthCheck = $('#healthCheckBtn');
+  btnHealthCheck?.addEventListener('click', async ()=>{
+    btnHealthCheck.disabled = true;
+    const original = btnHealthCheck.textContent;
+    btnHealthCheck.textContent = '⏳ Sending…';
+    try{
+      const r = await fetch('/admin/api/health-check/test', { method:'POST' });
+      const data = await r.json().catch(()=>({}));
+      toast(data?.ok ? 'Health check email sent' : ('Failed: ' + (data?.error || r.status)));
+    }catch(e){
+      console.error(e); toast('Network error');
+    }finally{
+      btnHealthCheck.disabled = false;
+      btnHealthCheck.textContent = original;
+    }
+  });
+
   // ---------- Drawer ----------
   const drawer = $('#drawer'), dClose = $('#dClose'), dStatus = $('#dStatus'), dNote = $('#dNote');
   const dEmail = $('#dEmail'), dSubject = $('#dSubject'), dSave = $('#dSave');
