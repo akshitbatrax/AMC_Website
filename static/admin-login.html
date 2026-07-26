@@ -13,18 +13,21 @@
 
   <link rel="stylesheet" href="/assets/app.css">
   <style>
-    :root{--ink:#0f172a;--muted:#64748b;--bg:#0b1020;--panel:#0f172a;--line:#1f2f49;--brand:#11b5ff;--brand2:#22c55e}
+    :root{--ink:#0f172a;--muted:#64748b;--bg:#0b1020;--panel:#0f172a;--line:#1f2f49;--brand:#4f7cab;--brand2:#2f4d70;--danger:#e5675f}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb;margin:0}
     .wrap{max-width:460px;margin:12vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(2,6,23,.35);text-align:center}
     h1{margin:8px 0 6px;font-size:20px}
     .sub{color:var(--muted);margin:0 0 10px}
     .field{display:grid;gap:6px;margin:10px 0;text-align:left}
     input{background:#0b1226;border:1px solid var(--line);border-radius:10px;padding:12px;color:#e5e7eb}
-    .btn{display:inline-block;background:linear-gradient(90deg,var(--brand),var(--brand2));color:#00121b;font-weight:800;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .btn{display:inline-block;background:var(--brand);color:#fff;font-weight:800;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .btn:hover{background:var(--brand2)}
     small{color:#93a3bf}
     .logo{display:block;margin:0 auto 12px;max-width:140px}
     .top{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
     .top svg{width:28px;height:28px}
+    .login-error{display:none;background:rgba(229,103,95,.12);border:1px solid var(--danger);color:#ffb4ae;border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:13.5px;font-weight:600;text-align:left}
+    .login-error.show{display:block}
   </style>
 </head>
 <body data-page="admin-login">
@@ -36,12 +39,14 @@
 
     <div class="top">
       <svg viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#11b5ff"/><stop offset=".7" stop-color="#22c55e"/></linearGradient></defs>
+        <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#4f7cab"/><stop offset=".7" stop-color="#c99a45"/></linearGradient></defs>
         <path d="M13 2l-10 9h7l-3 11 10-12h-6l2-8z"/>
       </svg>
       <h1>Admin Login</h1>
     </div>
     <p class="sub">Enter credentials to access the dashboard.</p>
+
+    <div class="login-error" id="loginError">Incorrect username or password. Please try again.</div>
 
     <form method="post" action="/admin/login" autocomplete="on">
       <div class="field">
@@ -58,6 +63,13 @@
       </div>
     </form>
   </div>
+
+  <script>
+    if (new URLSearchParams(location.search).get('error') === '1') {
+      document.getElementById('loginError').classList.add('show');
+      history.replaceState(null, '', location.pathname); // drop ?error=1 so a refresh doesn't re-show it
+    }
+  </script>
 
   <!-- IMPORTANT: don't include /static/assets/admin.js on the login page -->
 </body>

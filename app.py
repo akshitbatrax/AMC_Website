@@ -602,7 +602,7 @@ def admin_login_post():
         session["authed"] = True
         session["who"] = ADMIN_USER_ID
         return redirect(url_for("admin_dashboard_page"))
-    return redirect(url_for("admin_login_page"))
+    return redirect(url_for("admin_login_page", error="1"))
 
 @app.get("/admin/logout")
 def admin_logout():
