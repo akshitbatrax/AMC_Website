@@ -237,14 +237,14 @@ function render(){
     </tbody>
   </table>
 
-  <table style="margin-top:-1px"><tr><td class="words-row">Amount Chargeable (In Words) : <span class="bold">${amountWords(grand,curword)}</span> <span ${CE('footer_note')}>${esc(g('footer_note'))}</span></td></tr></table>
-
-  ${hsnSummary}
-
-  <table style="margin-top:-1px"><tr class="pay-row"><td class="right" style="width:78%">AMOUNT PAYABLE</td><td class="right">${cur} ${fmt(grand)}</td></tr></table>
-
   <div style="margin-top:auto">
-    <table><tr><td class="terms-cell">
+    <table style="margin-top:-1px"><tr><td class="words-row">Amount Chargeable (In Words) : <span class="bold">${amountWords(grand,curword)}</span> <span ${CE('footer_note')}>${esc(g('footer_note'))}</span></td></tr></table>
+
+    ${hsnSummary}
+
+    <table style="margin-top:-1px"><tr class="pay-row"><td class="right" style="width:78%">AMOUNT PAYABLE</td><td class="right">${cur} ${fmt(grand)}</td></tr></table>
+
+    <table style="margin-top:-1px"><tr><td class="terms-cell">
       <span class="lbl">Terms &amp; Conditions:</span>
       <ol>
         <li>Payment is due by the date mentioned above; overdue amounts may attract interest @18% p.a.</li>
