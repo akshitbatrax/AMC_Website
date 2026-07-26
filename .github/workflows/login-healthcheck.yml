@@ -1,0 +1,58 @@
+name: Admin Login Healthcheck (with video)
+
+# Triggered from the admin dashboard's "Login Healthcheck (Video)" button via
+# the GitHub API (workflow_dispatch), since Render's server has no browser to
+# run qa/admin_login_test.js's screenshot/video capture itself. Can also be
+# run manually from the Actions tab for an ad-hoc report.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Site to test (defaults to production)'
+        required: false
+        default: 'https://www.amcspark.com'
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Confirm ffmpeg is available
+        run: ffmpeg -version | head -1
+
+      - name: Launch headless Chrome (remote debugging)
+        run: |
+          "${{ steps.setup-chrome.outputs.chrome-path }}" \
+            --headless=new --disable-gpu --remote-debugging-port=9222 \
+            --user-data-dir="${{ runner.temp }}/qa-chrome-profile" about:blank &
+          sleep 2
+
+      - name: Run login healthcheck (screenshots + video, emailed on completion)
+        env:
+          QA_BASE_URL: ${{ github.event.inputs.base_url }}
+          QA_ADMIN_USER: ${{ secrets.QA_ADMIN_USER }}
+          QA_ADMIN_PASS: ${{ secrets.QA_ADMIN_PASS }}
+          QA_RECORD_VIDEO: "1"
+          QA_SEND_EMAIL: "1"
+          QA_BREVO_API_KEY: ${{ secrets.QA_BREVO_API_KEY }}
+          QA_EMAIL_FROM: ${{ secrets.QA_EMAIL_FROM }}
+          QA_EMAIL_TO: ${{ secrets.QA_EMAIL_TO }}
+          QA_OUT_DIR: ${{ github.workspace }}/qa-run-output
+        run: node qa/admin_login_test.js
+
+      - name: Upload report + screenshots + video as a workflow artifact too
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-healthcheck-report
+          path: qa-run-output.zip
+          retention-days: 14
