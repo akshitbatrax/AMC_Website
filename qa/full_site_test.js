@@ -322,7 +322,13 @@ ${results.map(r => `[${r.passed ? 'PASS' : 'FAIL'}] ${r.id} - ${r.name}${r.note 
       passCount,
       totalCount: results.length,
       groups: buildEmailGroups(results, OUT_DIR),
-      extraAttachments: [zipPath, ...(videoPath ? [videoPath] : [])],
+      // The full zip (all full-resolution screenshots, ~12MB+ before
+      // base64) pushed the message past Brevo's 20MB cap - every
+      // screenshot is already embedded inline above at email-safe size,
+      // so only the small text report and the video ride along here.
+      // The zip itself is still produced on disk (and in the CI artifact
+      // for the GitHub Actions path) for anyone who wants full-res originals.
+      extraAttachments: [path.join(OUT_DIR, 'report.txt'), ...(videoPath ? [videoPath] : [])],
     });
   }
 }

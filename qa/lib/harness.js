@@ -313,7 +313,7 @@ async function sendKanbanReportEmail({ apiKey, from, to, subject, target, runAt,
   }
 
   const evidenceNote = extraAttachments.length
-    ? `Full evidence attached: ${extraAttachments.map(f => path.basename(f)).join(', ')}. QA-generated Quick Quote / Contact / Project Desk submissions are tagged <b>[QA AUTOMATED TEST]</b> in the admin dashboard - safe to ignore or delete, there is no automated cleanup yet.`
+    ? `${extraAttachments.map(f => path.basename(f)).join(' and ')} attached below. Screenshots above are compressed for email; full-resolution originals aren't attached here (they'd push most runs over Brevo's 20MB mail limit) but are saved alongside this run's zip. QA-generated Quick Quote / Contact / Project Desk submissions are tagged <b>[QA AUTOMATED TEST]</b> in the admin dashboard - safe to ignore or delete, there is no automated cleanup yet.`
     : 'QA-generated Quick Quote / Contact / Project Desk submissions are tagged <b>[QA AUTOMATED TEST]</b> in the admin dashboard - safe to ignore or delete, there is no automated cleanup yet.';
 
   const html = buildKanbanEmailHtml({ target, runAt, passCount, totalCount, groups, evidenceNote });
