@@ -26,13 +26,21 @@ jobs:
         id: setup-chrome
         uses: browser-actions/setup-chrome@v1
 
+      - name: Install ffmpeg
+        # ubuntu-latest does NOT ship ffmpeg preinstalled (a wrong assumption
+        # this workflow started with) - without this, video recording fails
+        # silently later since qa/lib/harness.js treats a missing ffmpeg as
+        # "skip video" rather than a hard error.
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+
       - name: Confirm ffmpeg is available
-        run: ffmpeg -version | head -1
+        run: ffmpeg -version
 
       - name: Launch headless Chrome (remote debugging)
         run: |
           "${{ steps.setup-chrome.outputs.chrome-path }}" \
-            --headless=new --disable-gpu --remote-debugging-port=9222 \
+            --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage \
+            --remote-debugging-port=9222 \
             --user-data-dir="${{ runner.temp }}/qa-chrome-profile" about:blank &
           sleep 2
 
