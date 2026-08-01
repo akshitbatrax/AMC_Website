@@ -20,7 +20,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # qa/lib/harness.js and qa/admin_login_test.js use the native
+          # global WebSocket (CDP connection) and fetch - WebSocket only
+          # stabilized as a built-in Node global in v22; Node 20 throws
+          # "ReferenceError: WebSocket is not defined". This never showed up
+          # locally since dev machines here run Node 24.
+          node-version: '22'
 
       - name: Set up Chrome
         id: setup-chrome
