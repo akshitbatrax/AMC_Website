@@ -207,4 +207,138 @@ async function sendReportEmail({ apiKey, from, to, subject, summary, zipPath }) 
   console.log('Email send status:', res.status, body);
 }
 
-module.exports = { createSession, zipRun, sendReportEmail, hasFfmpeg };
+/**
+ * Downscales a screenshot for email embedding via ffmpeg (already a
+ * dependency for video building, so this adds nothing new to install
+ * locally or in CI). Returns null if ffmpeg isn't available or the
+ * conversion fails - callers should treat that as "skip this image"
+ * rather than fail the whole report.
+ */
+function shrinkForEmail(srcPngPath, { maxWidth = 640, quality = 6 } = {}) {
+  if (!hasFfmpeg()) return null;
+  const outPath = srcPngPath.replace(/\.png$/i, '.email.jpg');
+  try {
+    execSync(
+      `ffmpeg -y -i ${JSON.stringify(srcPngPath)} -vf "scale='min(${maxWidth},iw)':-2" -q:v ${quality} ${JSON.stringify(outPath)}`,
+      { stdio: 'pipe' }
+    );
+    return outPath;
+  } catch (e) {
+    console.error('ffmpeg thumbnail failed for', srcPngPath, e.message);
+    return null;
+  }
+}
+
+function kanbanCardHtml(c) {
+  const passBg = c.passed ? '#d9f2e3' : '#f6dfdf';
+  const passFg = c.passed ? '#1c9d5c' : '#c23b3b';
+  const img = c.cid
+    ? `<tr><td style="padding:6px 6px 0"><img src="cid:${c.cid}" width="100%" alt="${c.title}" style="display:block;width:100%;height:auto;border-radius:5px;border:1px solid #eef1f6" /></td></tr>`
+    : '';
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;border:1px solid #d8dfe9;border-radius:8px;background:#ffffff">
+    ${img}
+    <tr><td style="padding:8px 10px 10px">
+      <span style="display:inline-block;font:700 9.5px ui-monospace,'SF Mono',Consolas,monospace;background:${passBg};color:${passFg};padding:2px 6px;border-radius:4px;letter-spacing:.03em">${c.passed ? 'PASS' : 'FAIL'}</span>
+      <span style="font:700 9.5px ui-monospace,'SF Mono',Consolas,monospace;color:#8b96ab;margin-left:5px">${c.id}</span>
+      <div style="font:600 12.5px -apple-system,Arial,sans-serif;color:#0a1626;margin-top:4px">${c.title}</div>
+      <div style="font:400 11px -apple-system,Arial,sans-serif;color:#55627a;margin-top:2px">${c.note || ''}</div>
+    </td></tr>
+  </table>`;
+}
+
+function kanbanColumnHtml(group) {
+  return `<td valign="top" width="33.33%" class="kanban-col" style="padding:0 6px">
+    <div style="font:700 11px ui-monospace,'SF Mono',Consolas,monospace;text-transform:uppercase;letter-spacing:.08em;color:#4a6b8f;border-bottom:1px solid #d8dfe9;padding-bottom:6px;margin:0 0 10px">${group.label} &middot; ${group.cases.length}</div>
+    ${group.cases.map(kanbanCardHtml).join('\n')}
+  </td>`;
+}
+
+/**
+ * Builds a table-based (email-client-safe) kanban board: one column per
+ * group, one card per test case, screenshot referenced via cid: (caller
+ * must supply matching inline attachments - see sendKanbanReportEmail).
+ */
+function buildKanbanEmailHtml({ target, runAt, passCount, totalCount, groups, evidenceNote }) {
+  const allPassed = passCount === totalCount;
+  return `<style>
+    @media (max-width: 480px) {
+      .kanban-col { display:block !important; width:100% !important; padding:0 0 18px !important; }
+    }
+  </style>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f6;padding:24px 0">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:660px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #d8dfe9">
+        <tr><td style="background:#0f2a4a;padding:22px 26px;border-bottom:3px solid #b5852c">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="font:700 19px/1.3 -apple-system,Arial,sans-serif;color:#eef1f6">
+              AMC Spark &mdash; Full-Site QA Report
+              <div style="font:600 10.5px/1.6 ui-monospace,'SF Mono',Consolas,monospace;color:#e6c98a;letter-spacing:.07em;text-transform:uppercase;margin-top:4px">${target} &middot; ${runAt}</div>
+            </td>
+            <td align="right" style="font:700 32px/1 ui-monospace,'SF Mono',Consolas,monospace;color:${allPassed ? '#22e07a' : '#f0a34a'};white-space:nowrap">${passCount}/${totalCount}</td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:18px 20px 6px">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            ${groups.map(kanbanColumnHtml).join('\n')}
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:14px 26px 20px;background:#f6f8fb;font:400 11.5px/1.6 -apple-system,Arial,sans-serif;color:#55627a;border-top:1px solid #d8dfe9">
+          ${evidenceNote || ''}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Sends the kanban board as the email body, with each card's screenshot
+ * embedded inline via CID and any extraAttachments (video, full zip)
+ * attached normally alongside it.
+ */
+async function sendKanbanReportEmail({ apiKey, from, to, subject, target, runAt, passCount, totalCount, groups, extraAttachments = [] }) {
+  if (!apiKey || !from || !to) {
+    console.log('Email requested but QA_BREVO_API_KEY/QA_EMAIL_FROM/QA_EMAIL_TO not all set - skipping.');
+    return;
+  }
+
+  const inlineAttachments = [];
+  for (const group of groups) {
+    for (const c of group.cases) {
+      if (!c.screenshotPath) continue;
+      const thumbPath = shrinkForEmail(c.screenshotPath);
+      if (!thumbPath) continue;
+      c.cid = path.basename(c.screenshotPath).replace(/\.png$/i, '.jpg');
+      inlineAttachments.push({ name: c.cid, content: fs.readFileSync(thumbPath).toString('base64') });
+    }
+  }
+
+  const evidenceNote = extraAttachments.length
+    ? `Full evidence attached: ${extraAttachments.map(f => path.basename(f)).join(', ')}. QA-generated Quick Quote / Contact / Project Desk submissions are tagged <b>[QA AUTOMATED TEST]</b> in the admin dashboard - safe to ignore or delete, there is no automated cleanup yet.`
+    : 'QA-generated Quick Quote / Contact / Project Desk submissions are tagged <b>[QA AUTOMATED TEST]</b> in the admin dashboard - safe to ignore or delete, there is no automated cleanup yet.';
+
+  const html = buildKanbanEmailHtml({ target, runAt, passCount, totalCount, groups, evidenceNote });
+  const textFallback = groups.map(g => `${g.label}\n` + g.cases.map(c => `[${c.passed ? 'PASS' : 'FAIL'}] ${c.id} - ${c.title}`).join('\n')).join('\n\n');
+
+  const attachment = [
+    ...inlineAttachments,
+    ...extraAttachments.map(f => ({ name: path.basename(f), content: fs.readFileSync(f).toString('base64') })),
+  ];
+
+  const payload = {
+    sender: { name: 'AMC Spark QA', email: from },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+    textContent: textFallback,
+    attachment,
+  };
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const body = await res.text();
+  console.log('Kanban email send status:', res.status, body);
+}
+
+module.exports = { createSession, zipRun, sendReportEmail, sendKanbanReportEmail, hasFfmpeg };

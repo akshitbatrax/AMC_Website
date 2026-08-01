@@ -36,7 +36,49 @@
 
 const fs = require('fs');
 const path = require('path');
-const { createSession, zipRun, sendReportEmail } = require('./lib/harness');
+const { createSession, zipRun, sendKanbanReportEmail } = require('./lib/harness');
+
+// Maps each test case to the email report's kanban column and the
+// screenshot that best represents it - kept separate from the live
+// pass/fail results below so a card always renders even if a step throws
+// partway through.
+const CASE_META = [
+  { id: 'TC1', group: 'Public site', title: 'Homepage loads', screenshot: '01-homepage.png' },
+  { id: 'TC2', group: 'Public site', title: 'Quick Quote modal opens', screenshot: '02-quick-quote-modal.png' },
+  { id: 'TC3', group: 'Public site', title: 'Quick Quote validates', screenshot: '03-quick-quote-validation.png' },
+  { id: 'TC4', group: 'Public site', title: 'Quick Quote submits', screenshot: '04-quick-quote-success.png' },
+  { id: 'TC5', group: 'Public site', title: 'Contact form validates', screenshot: '05-contact-filled.png' },
+  { id: 'TC6', group: 'Public site', title: 'Contact form submits', screenshot: '06-contact-success.png' },
+  { id: 'TC7', group: 'Public site', title: 'Project Desk submits', screenshot: '08-project-desk-success.png' },
+  { id: 'TC8', group: 'Admin & login', title: 'Office Use Only gate', screenshot: '09-login-page.png' },
+  { id: 'TC9', group: 'Admin & login', title: 'Valid login succeeds', screenshot: '10-login-success-dashboard.png' },
+  { id: 'TC10', group: 'Admin & login', title: 'Dashboard tabs switch', screenshot: '11-dashboard-tabs.png' },
+  { id: 'TC11', group: 'Admin & login', title: 'Invoice Generator loads', screenshot: '12-invoice-generator.png' },
+  { id: 'TC12', group: 'Admin & login', title: 'Logout ends the session', screenshot: '13-after-logout.png' },
+  { id: 'TC13', group: 'Admin & login', title: 'Bad password rejected', screenshot: '14-wrong-password-rejected.png' },
+  { id: 'TC14', group: 'Admin & login', title: 'Correct password still works', screenshot: '15-correct-password-reconfirmed.png' },
+  { id: 'TC15', group: 'Mobile layout', title: 'Homepage fits mobile width', screenshot: '16-mobile-homepage.png' },
+  { id: 'TC16', group: 'Mobile layout', title: 'Invoice Generator fits mobile width', screenshot: '17-mobile-invoice-generator.png' },
+];
+
+function buildEmailGroups(results, outDir) {
+  const byId = Object.fromEntries(results.map(r => [r.id, r]));
+  const order = [];
+  const grouped = {};
+  for (const meta of CASE_META) {
+    const r = byId[meta.id];
+    if (!r) continue;
+    if (!grouped[meta.group]) { grouped[meta.group] = []; order.push(meta.group); }
+    grouped[meta.group].push({
+      id: meta.id,
+      title: meta.title,
+      note: r.note,
+      passed: r.passed,
+      screenshotPath: path.join(outDir, meta.screenshot),
+    });
+  }
+  return order.map(label => ({ label, cases: grouped[label] }));
+}
 
 const BASE_URL     = process.env.QA_BASE_URL || 'https://www.amcspark.com';
 const CDP_PORT     = process.env.QA_CDP_PORT || '9222';
@@ -270,13 +312,17 @@ ${results.map(r => `[${r.passed ? 'PASS' : 'FAIL'}] ${r.id} - ${r.name}${r.note 
   const zipPath = zipRun(OUT_DIR, videoPath ? [videoPath] : []);
 
   if (process.env.QA_SEND_EMAIL === '1') {
-    await sendReportEmail({
+    await sendKanbanReportEmail({
       apiKey: process.env.QA_BREVO_API_KEY,
       from: process.env.QA_EMAIL_FROM,
       to: process.env.QA_EMAIL_TO,
       subject: `AMC Spark Full Site QA Report - ${passCount}/${results.length} passed`,
-      summary,
-      zipPath,
+      target: BASE_URL,
+      runAt: new Date().toISOString(),
+      passCount,
+      totalCount: results.length,
+      groups: buildEmailGroups(results, OUT_DIR),
+      extraAttachments: [zipPath, ...(videoPath ? [videoPath] : [])],
     });
   }
 }
