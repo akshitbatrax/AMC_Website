@@ -12,22 +12,30 @@
 
   <link rel="stylesheet" href="/assets/app.css">
   <style>
-    :root{--ink:#0f172a;--muted:#64748b;--bg:#0b1020;--panel:#0f172a;--line:#1f2f49;--brand:#4f7cab;--brand2:#2f4d70;--danger:#e5675f;--ok:#4caf82}
+    :root{--ink:#0f172a;--muted:#64748b;--bg:#0b1020;--panel:#0f172a;--line:#1f2f49;--brand:#4f7cab;--brand2:#2f4d70;--danger:#e5675f;--ok:#4caf82;--warn:#c99a45}
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb;margin:0}
     .wrap{max-width:460px;margin:8vh auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(2,6,23,.35);text-align:center}
     h1{margin:8px 0 6px;font-size:20px}
     .sub{color:var(--muted);margin:0 0 16px;font-size:13.5px;line-height:1.5}
-    .cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#0b1226;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px}
-    .cam-box video, .cam-box img{width:100%;height:100%;object-fit:cover;display:block}
-    .cam-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;font-size:13px;color:var(--muted);text-align:center}
+    .cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#0b1226;border:2px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px;transition:border-color .2s ease}
+    .cam-box.state-noface{border-color:var(--danger)}
+    .cam-box.state-face{border-color:var(--brand)}
+    .cam-box.state-captured{border-color:var(--ok)}
+    .cam-box video, .cam-box img{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+    .cam-box img{transform:none}
+    .cam-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;font-size:13px;color:#e5e7eb;text-align:center;background:rgba(11,16,32,.55)}
+    .badge{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:999px;margin-bottom:14px}
+    .badge.loading{background:rgba(148,163,184,.15);color:var(--muted)}
+    .badge.noface{background:rgba(229,103,95,.15);color:var(--danger)}
+    .badge.face{background:rgba(79,124,171,.18);color:#9db8dd}
+    .badge.captured{background:rgba(76,175,130,.18);color:var(--ok)}
+    .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
     .field{display:grid;gap:6px;margin:10px 0;text-align:left}
     .field input{width:100%;box-sizing:border-box;background:#0b1226;border:1px solid var(--line);border-radius:10px;padding:12px;color:#e5e7eb;font-size:14px}
-    .row{display:flex;gap:10px}
-    .row .btn{flex:1}
-    .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;font-weight:800;border:none;border-radius:10px;padding:11px 14px;cursor:pointer;font-size:14px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;font-weight:800;border:none;border-radius:10px;padding:11px 14px;cursor:pointer;font-size:14px;width:100%}
     .btn:hover{background:var(--brand2)}
     .btn:disabled{opacity:.45;cursor:not-allowed}
-    .btn.ghost{background:transparent;border:1px solid var(--line);color:#e5e7eb}
+    .btn.ghost{background:transparent;border:1px solid var(--line);color:#e5e7eb;margin-top:8px}
     .status{min-height:20px;margin-top:10px;font-size:13px}
     .status.err{color:var(--danger)}
     .status.ok{color:var(--ok)}
@@ -50,17 +58,16 @@
       </svg>
       <h1>Access Verification</h1>
     </div>
-    <p class="sub">For our access records, please take a quick photo and confirm your name before continuing to the office-use area.</p>
+    <p class="sub">For our access records, please confirm you're really here: look at the camera and blink naturally - your photo is taken automatically the moment you do. Then confirm your name to continue.</p>
+
+    <div class="badge loading" id="badge"><span class="dot"></span><span id="badgeText">Loading face detection…</span></div>
 
     <div class="cam-box" id="camBox">
       <video id="video" autoplay playsinline muted></video>
       <canvas id="canvas" style="display:none"></canvas>
     </div>
 
-    <div class="row" id="camActions">
-      <button class="btn" id="captureBtn" type="button">📸 Take Photo</button>
-    </div>
-    <div class="row" id="retakeActions" style="display:none">
+    <div id="retakeActions" style="display:none">
       <button class="btn ghost" id="retakeBtn" type="button">Retake</button>
     </div>
 
@@ -69,103 +76,199 @@
       <input id="nameInput" placeholder="e.g., Akshit" autocomplete="name" required>
     </div>
 
-    <button class="btn" id="continueBtn" type="button" disabled style="width:100%;margin-top:6px">Continue</button>
+    <button class="btn" id="continueBtn" type="button" disabled>Continue</button>
     <div class="status" id="status"></div>
 
     <a href="/admin/logout" class="logout-link">Not you? Log out instead</a>
   </div>
 
-  <script>
+  <script type="module">
+    import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const camBox = document.getElementById('camBox');
-    const captureBtn = document.getElementById('captureBtn');
-    const retakeBtn = document.getElementById('retakeBtn');
-    const camActions = document.getElementById('camActions');
+    const badge = document.getElementById('badge');
+    const badgeText = document.getElementById('badgeText');
     const retakeActions = document.getElementById('retakeActions');
+    const retakeBtn = document.getElementById('retakeBtn');
     const nameInput = document.getElementById('nameInput');
     const continueBtn = document.getElementById('continueBtn');
     const statusEl = document.getElementById('status');
 
     let stream = null;
     let photoDataUrl = null;
+    let faceLandmarker = null;
+    let rafId = null;
+    // Blink state machine: a face must be seen with eyes clearly open before
+    // we start watching for the closed->open transition - this is the actual
+    // "blink" that triggers capture, and avoids firing on the very first
+    // frame if the model briefly misreads eyes as closed.
+    let sawOpenEyes = false;
+    let captured = false;
+
+    const BLINK_CLOSED = 0.55;
+    const BLINK_OPEN = 0.30;
 
     function setStatus(msg, cls) {
       statusEl.textContent = msg || '';
       statusEl.className = 'status' + (cls ? ' ' + cls : '');
     }
-
+    function setBadge(cls, text) {
+      badge.className = 'badge ' + cls;
+      badgeText.textContent = text;
+    }
     function updateContinueState() {
       continueBtn.disabled = !(photoDataUrl && nameInput.value.trim());
     }
     nameInput.addEventListener('input', updateContinueState);
 
     function showCameraMessage(text) {
+      const existing = camBox.querySelector('.cam-msg');
+      if (existing) existing.remove();
       const msg = document.createElement('div');
       msg.className = 'cam-msg';
       msg.textContent = text;
       camBox.appendChild(msg);
     }
+    function clearCameraMessage() {
+      const existing = camBox.querySelector('.cam-msg');
+      if (existing) existing.remove();
+    }
+
+    async function loadModel() {
+      const filesetResolver = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+      );
+      faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+          delegate: "GPU",
+        },
+        outputFaceBlendshapes: true,
+        runningMode: "VIDEO",
+        numFaces: 1,
+      });
+    }
 
     async function startCamera() {
-      captureBtn.disabled = true;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
         video.srcObject = stream;
         try { await video.play(); } catch (e) { console.warn('video.play() failed:', e); }
-        // A resolved play() doesn't guarantee a decoded frame is ready yet -
-        // wait for one so "Take Photo" never captures a blank frame.
         if (video.readyState < 2) {
           await new Promise((resolve) => {
             const done = () => { video.removeEventListener('loadeddata', done); resolve(); };
             video.addEventListener('loadeddata', done);
-            setTimeout(done, 3000); // don't hang forever if the event never fires
+            setTimeout(done, 3000);
           });
         }
-        captureBtn.disabled = false;
       } catch (e) {
         console.error(e);
-        showCameraMessage('Camera access is needed to continue. Please allow camera access in your browser and reload this page.');
-        captureBtn.textContent = 'Reload page';
-        captureBtn.disabled = false;
-        captureBtn.onclick = () => location.reload();
+        setBadge('noface', 'Camera unavailable');
+        showCameraMessage('Camera access is needed to continue. Please allow camera access and reload this page.');
+        setStatus('', '');
       }
     }
-    startCamera();
 
-    captureBtn.addEventListener('click', () => {
-      if (!stream) return;
+    function capturePhoto() {
       const targetW = 480;
       const ratio = video.videoHeight ? video.videoWidth / video.videoHeight : 4 / 3;
       canvas.width = targetW;
       canvas.height = Math.round(targetW / ratio);
       const ctx = canvas.getContext('2d');
+      // Mirror the capture to match the mirrored preview the person sees.
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      photoDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      photoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
       const img = document.createElement('img');
       img.src = photoDataUrl;
       img.id = 'capturedImg';
       video.style.display = 'none';
+      clearCameraMessage();
       camBox.appendChild(img);
+      camBox.className = 'cam-box state-captured';
 
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      if (rafId) cancelAnimationFrame(rafId);
 
-      camActions.style.display = 'none';
-      retakeActions.style.display = 'flex';
+      captured = true;
+      setBadge('captured', 'Captured — you’re verified');
+      retakeActions.style.display = 'block';
       updateContinueState();
-    });
+    }
 
-    retakeBtn.addEventListener('click', () => {
+    function detectLoop() {
+      if (captured || !faceLandmarker || video.readyState < 2) {
+        rafId = requestAnimationFrame(detectLoop);
+        return;
+      }
+      const result = faceLandmarker.detectForVideo(video, performance.now());
+      const hasFace = result.faceLandmarks && result.faceLandmarks.length > 0;
+
+      if (!hasFace) {
+        camBox.className = 'cam-box state-noface';
+        setBadge('noface', 'No face detected — center your face in frame');
+        sawOpenEyes = false;
+      } else {
+        const cats = result.faceBlendshapes[0].categories;
+        const left = cats.find(c => c.categoryName === 'eyeBlinkLeft')?.score || 0;
+        const right = cats.find(c => c.categoryName === 'eyeBlinkRight')?.score || 0;
+        const blinkScore = Math.max(left, right);
+
+        camBox.className = 'cam-box state-face';
+        if (blinkScore < BLINK_OPEN) {
+          sawOpenEyes = true;
+          setBadge('face', 'Face detected — blink naturally to capture');
+        } else if (blinkScore > BLINK_CLOSED && sawOpenEyes) {
+          // Eyes just closed after being seen open - wait for them to
+          // reopen before capturing, so the photo itself is clear (open
+          // eyes), while the closed-then-open transition is what proves
+          // this is a live blink and not a static photo held up to the camera.
+          setBadge('face', 'Blink detected — hold still…');
+          waitForReopenThenCapture();
+          return; // detectLoop resumes only if that resolves without a capture
+        }
+      }
+      rafId = requestAnimationFrame(detectLoop);
+    }
+
+    async function waitForReopenThenCapture() {
+      const start = performance.now();
+      while (performance.now() - start < 2000) {
+        if (captured) return;
+        const result = faceLandmarker.detectForVideo(video, performance.now());
+        const hasFace = result.faceLandmarks && result.faceLandmarks.length > 0;
+        if (hasFace) {
+          const cats = result.faceBlendshapes[0].categories;
+          const left = cats.find(c => c.categoryName === 'eyeBlinkLeft')?.score || 0;
+          const right = cats.find(c => c.categoryName === 'eyeBlinkRight')?.score || 0;
+          if (Math.max(left, right) < BLINK_OPEN) {
+            capturePhoto();
+            return;
+          }
+        }
+        await new Promise(r => requestAnimationFrame(r));
+      }
+      // Reopen wasn't confirmed in time (e.g. prolonged eye closure) - go
+      // back to watching for a fresh blink rather than getting stuck.
+      sawOpenEyes = false;
+      rafId = requestAnimationFrame(detectLoop);
+    }
+
+    retakeBtn.addEventListener('click', async () => {
       photoDataUrl = null;
+      captured = false;
+      sawOpenEyes = false;
       const img = document.getElementById('capturedImg');
       if (img) img.remove();
-      video.style.display = '';
       retakeActions.style.display = 'none';
-      camActions.style.display = 'flex';
+      video.style.display = '';
       updateContinueState();
-      startCamera();
+      await startCamera();
+      detectLoop();
     });
 
     continueBtn.addEventListener('click', async () => {
@@ -195,6 +298,14 @@
         continueBtn.disabled = false;
       }
     });
+
+    (async () => {
+      const [_a, _b] = await Promise.all([loadModel(), startCamera()]);
+      if (stream) {
+        setBadge('noface', 'No face detected — center your face in frame');
+        detectLoop();
+      }
+    })();
   </script>
 </body>
 </html>
