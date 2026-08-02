@@ -637,6 +637,15 @@ def admin_verify_page():
         return redirect(next_path)
     return send_from_directory(STATIC_DIR, "admin-verify.html")
 
+# Without this, the generic static-file catch-all below would serve the raw
+# page at its literal filename with no auth check at all (the same class of
+# gap invoice-generator.html used to have) - the actual data-submitting
+# endpoint (/admin/api/access-log) is separately gated regardless, but an
+# unauthenticated visitor shouldn't be able to load the page UI directly.
+@app.get("/admin-verify.html")
+def admin_verify_html_direct():
+    return redirect(url_for("admin_login_page"))
+
 @app.post("/admin/api/access-log")
 def admin_api_access_log():
     guard = _require_authed_api()
