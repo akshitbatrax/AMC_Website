@@ -657,24 +657,48 @@ def admin_api_access_log():
     if len(photo_bytes) > 8 * 1024 * 1024:
         return jsonify({"ok": False, "error": "Photo too large."}), 400
 
+    # Optional close-up eye/iris crops captured alongside the main photo -
+    # supplementary imagery only (a regular camera can't do real biometric
+    # iris recognition, which needs an IR-illuminated sensor), so these are
+    # just extra visual detail, not a biometric match.
+    iris_urls = body.get("iris") or []
+    inline_images = [(f"access-photo.{ext}", photo_bytes)]
+    iris_html = ""
+    if isinstance(iris_urls, list):
+        for i, url in enumerate(iris_urls[:2]):
+            im = re.match(r"^data:image/(png|jpeg);base64,(.+)$", url or "", re.DOTALL)
+            if not im:
+                continue
+            try:
+                iris_bytes = base64.b64decode(im.group(2))
+            except Exception:
+                continue
+            if len(iris_bytes) > 2 * 1024 * 1024:
+                continue
+            iris_ext = "png" if im.group(1) == "png" else "jpg"
+            cid = f"access-iris-{i}.{iris_ext}"
+            inline_images.append((cid, iris_bytes))
+            iris_html += f'<img src="cid:{cid}" alt="Eye close-up" style="width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid {BRAND["line"]};margin-right:8px">'
+
     stamp = _now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
     safe_name = html.escape(name)[:200]
     inner = f"""
 <h2 style="margin:0 0 8px;font:700 18px Arial;color:{BRAND['ink']}">🔐 Office Use Only — Access Log</h2>
-<p style="margin:0 0 12px;font:400 14px Arial;color:{BRAND['muted']}">Someone logged into the admin/office area and completed the access-verification step.</p>
+<p style="margin:0 0 12px;font:400 14px Arial;color:{BRAND['muted']}">Someone logged into the admin/office area and completed the access-verification step (live face + blink check).</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid {BRAND['line']};border-radius:10px">
   <tr><td style="padding:10px 12px;font:700 13px Arial;width:110px;color:{BRAND['muted']}">Name</td><td style="padding:10px 12px;font:700 14px Arial;color:{BRAND['ink']}">{safe_name}</td></tr>
   <tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND['muted']}">Time</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND['ink']}">{stamp}</td></tr>
   <tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND['muted']}">IP</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND['ink']}">{html.escape(request.headers.get('X-Forwarded-For', request.remote_addr) or '')}</td></tr>
 </table>
 <p style="margin:14px 0 0"><img src="cid:access-photo.{ext}" alt="Access photo" style="max-width:100%;border-radius:10px;border:1px solid {BRAND['line']}"></p>
+{f'<p style="margin:12px 0 0">{iris_html}</p>' if iris_html else ""}
 """
     try:
         send_email(
             f"Office Use Only — Access Log: {name}",
             email_shell_html(f"Access log: {name}", inner),
             to=[HEALTH_CHECK_EMAIL],
-            inline_images=[(f"access-photo.{ext}", photo_bytes)],
+            inline_images=inline_images,
         )
     except Exception:
         app.logger.exception("access-log email failed")

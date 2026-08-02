@@ -98,17 +98,34 @@
 
     let stream = null;
     let photoDataUrl = null;
+    let irisDataUrls = null;
     let faceLandmarker = null;
     let rafId = null;
-    // Blink state machine: a face must be seen with eyes clearly open before
-    // we start watching for the closed->open transition - this is the actual
-    // "blink" that triggers capture, and avoids firing on the very first
-    // frame if the model briefly misreads eyes as closed.
-    let sawOpenEyes = false;
     let captured = false;
+
+    // --- Landmark indices (standard MediaPipe FaceMesh/FaceLandmarker 478-point topology) ---
+    const NOSE_TIP = 1, LEFT_CHEEK = 234, RIGHT_CHEEK = 454;
+    const RIGHT_IRIS = [468, 469, 470, 471, 472]; // center + 4 boundary points
+    const LEFT_IRIS = [473, 474, 475, 476, 477];
 
     const BLINK_CLOSED = 0.55;
     const BLINK_OPEN = 0.30;
+    const MIN_STABLE_OPEN_MS = 400;   // must see steady, valid, open-eyed face this long before arming
+    const MAX_BLINK_DURATION_MS = 600; // real blinks are fast - a slow hand-pass across the face isn't one
+    const SMOOTH_FRAMES = 4;
+
+    // Rolling buffers to smooth single-frame noise (e.g. a hand grazing the
+    // face for one frame spiking a blink score) rather than reacting to it.
+    const leftHist = [], rightHist = [];
+    function smoothed(hist, val) {
+      hist.push(val);
+      if (hist.length > SMOOTH_FRAMES) hist.shift();
+      return hist.reduce((a, b) => a + b, 0) / hist.length;
+    }
+
+    let stableOpenSince = null; // timestamp once we've been continuously valid+open
+    let armed = false;          // stableOpenSince has held long enough to watch for a blink
+    let closedAt = null;        // timestamp eyes were first seen closed after being armed
 
     function setStatus(msg, cls) {
       statusEl.textContent = msg || '';
@@ -171,7 +188,47 @@
       }
     }
 
-    function capturePhoto() {
+    // A face is only "good enough to trust" if it's a reasonable size (not
+    // tiny/distant/mostly out of frame) and roughly symmetric front-on -
+    // occlusion (a hand across the face) or an extreme angle throws this
+    // symmetry off even when the model still outputs *some* landmarks.
+    function faceQuality(landmarks) {
+      const nose = landmarks[NOSE_TIP], lc = landmarks[LEFT_CHEEK], rc = landmarks[RIGHT_CHEEK];
+      if (!nose || !lc || !rc) return { ok: false, reason: 'incomplete' };
+      const faceWidth = Math.abs(rc.x - lc.x);
+      if (faceWidth < 0.22) return { ok: false, reason: 'too small/far' };
+      const distL = Math.abs(nose.x - lc.x), distR = Math.abs(rc.x - nose.x);
+      const ratio = Math.min(distL, distR) / Math.max(distL, distR);
+      if (ratio < 0.55) return { ok: false, reason: 'angled or occluded' };
+      return { ok: true };
+    }
+
+    function eyeBlinkScores(result) {
+      const cats = result.faceBlendshapes[0].categories;
+      const left = cats.find(c => c.categoryName === 'eyeBlinkLeft')?.score || 0;
+      const right = cats.find(c => c.categoryName === 'eyeBlinkRight')?.score || 0;
+      return { left, right };
+    }
+
+    function cropRegion(points, padFactor) {
+      const xs = points.map(p => p.x * video.videoWidth);
+      const ys = points.map(p => p.y * video.videoHeight);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const w = maxX - minX, h = maxY - minY;
+      const pad = Math.max(w, h) * padFactor;
+      return { x: minX - pad, y: minY - pad, w: w + pad * 2, h: h + pad * 2 };
+    }
+
+    function cropToDataUrl(region, outSize) {
+      const c = document.createElement('canvas');
+      c.width = outSize; c.height = outSize;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(video, region.x, region.y, region.w, region.h, 0, 0, outSize, outSize);
+      return c.toDataURL('image/jpeg', 0.85);
+    }
+
+    function capturePhoto(landmarks) {
       const targetW = 480;
       const ratio = video.videoHeight ? video.videoWidth / video.videoHeight : 4 / 3;
       canvas.width = targetW;
@@ -182,6 +239,20 @@
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       photoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      // Close-up crops of each eye/iris region, for extra visual detail
+      // alongside the main photo - a webcam can't do true biometric iris
+      // recognition (that needs an IR-illuminated sensor), so this is
+      // supplementary imagery, not a biometric match.
+      try {
+        if (landmarks.length >= 478) {
+          const rightIrisPts = RIGHT_IRIS.map(i => landmarks[i]);
+          const leftIrisPts = LEFT_IRIS.map(i => landmarks[i]);
+          const rightCrop = cropToDataUrl(cropRegion(rightIrisPts, 2.2), 160);
+          const leftCrop = cropToDataUrl(cropRegion(leftIrisPts, 2.2), 160);
+          irisDataUrls = [leftCrop, rightCrop];
+        }
+      } catch (e) { console.warn('iris crop failed:', e); irisDataUrls = null; }
 
       const img = document.createElement('img');
       img.src = photoDataUrl;
@@ -205,63 +276,67 @@
         rafId = requestAnimationFrame(detectLoop);
         return;
       }
-      const result = faceLandmarker.detectForVideo(video, performance.now());
+      const now = performance.now();
+      const result = faceLandmarker.detectForVideo(video, now);
       const hasFace = result.faceLandmarks && result.faceLandmarks.length > 0;
+      const quality = hasFace ? faceQuality(result.faceLandmarks[0]) : { ok: false };
 
       if (!hasFace) {
         camBox.className = 'cam-box state-noface';
         setBadge('noface', 'No face detected — center your face in frame');
-        sawOpenEyes = false;
+        leftHist.length = 0; rightHist.length = 0;
+        stableOpenSince = null; armed = false; closedAt = null;
+      } else if (!quality.ok) {
+        camBox.className = 'cam-box state-noface';
+        setBadge('noface', 'Face not clearly visible — remove obstructions and face the camera directly');
+        leftHist.length = 0; rightHist.length = 0;
+        stableOpenSince = null; armed = false; closedAt = null;
       } else {
-        const cats = result.faceBlendshapes[0].categories;
-        const left = cats.find(c => c.categoryName === 'eyeBlinkLeft')?.score || 0;
-        const right = cats.find(c => c.categoryName === 'eyeBlinkRight')?.score || 0;
-        const blinkScore = Math.max(left, right);
+        const { left, right } = eyeBlinkScores(result);
+        const sLeft = smoothed(leftHist, left), sRight = smoothed(rightHist, right);
+        const bothOpen = sLeft < BLINK_OPEN && sRight < BLINK_OPEN;
+        const bothClosed = sLeft > BLINK_CLOSED && sRight > BLINK_CLOSED;
 
         camBox.className = 'cam-box state-face';
-        if (blinkScore < BLINK_OPEN) {
-          sawOpenEyes = true;
-          setBadge('face', 'Face detected — blink naturally to capture');
-        } else if (blinkScore > BLINK_CLOSED && sawOpenEyes) {
-          // Eyes just closed after being seen open - wait for them to
-          // reopen before capturing, so the photo itself is clear (open
-          // eyes), while the closed-then-open transition is what proves
-          // this is a live blink and not a static photo held up to the camera.
-          setBadge('face', 'Blink detected — hold still…');
-          waitForReopenThenCapture();
-          return; // detectLoop resumes only if that resolves without a capture
-        }
-      }
-      rafId = requestAnimationFrame(detectLoop);
-    }
 
-    async function waitForReopenThenCapture() {
-      const start = performance.now();
-      while (performance.now() - start < 2000) {
-        if (captured) return;
-        const result = faceLandmarker.detectForVideo(video, performance.now());
-        const hasFace = result.faceLandmarks && result.faceLandmarks.length > 0;
-        if (hasFace) {
-          const cats = result.faceBlendshapes[0].categories;
-          const left = cats.find(c => c.categoryName === 'eyeBlinkLeft')?.score || 0;
-          const right = cats.find(c => c.categoryName === 'eyeBlinkRight')?.score || 0;
-          if (Math.max(left, right) < BLINK_OPEN) {
-            capturePhoto();
-            return;
+        if (closedAt !== null) {
+          // We're mid-blink (armed, eyes went closed) - watching for a fast reopen.
+          if (bothOpen) {
+            if (now - closedAt <= MAX_BLINK_DURATION_MS) {
+              capturePhoto(result.faceLandmarks[0]);
+              return;
+            }
+            // Too slow to be a real blink (e.g. a hand slowly passing by) - restart.
+            closedAt = null; armed = false; stableOpenSince = now;
+            setBadge('face', 'Face detected — blink naturally to capture');
+          } else if (now - closedAt > MAX_BLINK_DURATION_MS + 400) {
+            // Been "closed" too long even beyond the grace window - reset rather than hang.
+            closedAt = null; armed = false; stableOpenSince = null;
+            setBadge('face', 'Face detected — blink naturally to capture');
+          } else {
+            setBadge('face', 'Blink detected — hold still…');
           }
+        } else if (bothOpen) {
+          if (stableOpenSince === null) stableOpenSince = now;
+          if (!armed && now - stableOpenSince >= MIN_STABLE_OPEN_MS) armed = true;
+          setBadge('face', armed ? 'Face detected — blink naturally to capture' : 'Hold still…');
+        } else if (bothClosed && armed) {
+          closedAt = now;
+          setBadge('face', 'Blink detected — hold still…');
+        } else if (!bothOpen) {
+          // Ambiguous/partial - don't count it as a stable open baseline.
+          stableOpenSince = null;
         }
-        await new Promise(r => requestAnimationFrame(r));
       }
-      // Reopen wasn't confirmed in time (e.g. prolonged eye closure) - go
-      // back to watching for a fresh blink rather than getting stuck.
-      sawOpenEyes = false;
       rafId = requestAnimationFrame(detectLoop);
     }
 
     retakeBtn.addEventListener('click', async () => {
       photoDataUrl = null;
+      irisDataUrls = null;
       captured = false;
-      sawOpenEyes = false;
+      leftHist.length = 0; rightHist.length = 0;
+      stableOpenSince = null; armed = false; closedAt = null;
       const img = document.getElementById('capturedImg');
       if (img) img.remove();
       retakeActions.style.display = 'none';
@@ -281,7 +356,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ name, photo: photoDataUrl }),
+          body: JSON.stringify({ name, photo: photoDataUrl, iris: irisDataUrls }),
         });
         const data = await r.json().catch(() => ({}));
         if (data.ok) {
