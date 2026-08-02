@@ -680,6 +680,27 @@ def admin_api_access_log():
             inline_images.append((cid, iris_bytes))
             iris_html += f'<img src="cid:{cid}" alt="Eye close-up" style="width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid {BRAND["line"]};margin-right:8px">'
 
+    # Optional device location (the browser's own geolocation prompt gates
+    # this - best-effort only, a legitimate admin shouldn't be locked out
+    # just because GPS/permission wasn't available).
+    loc = body.get("location")
+    loc_row = f'<tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND["muted"]}">Location</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND["muted"]}">Not available (denied or unsupported)</td></tr>'
+    if isinstance(loc, dict):
+        try:
+            lat = float(loc.get("lat"))
+            lng = float(loc.get("lng"))
+            if -90 <= lat <= 90 and -180 <= lng <= 180:
+                acc = loc.get("accuracy")
+                acc_txt = f" (±{int(acc)}m)" if isinstance(acc, (int, float)) else ""
+                maps_url = f"https://www.google.com/maps?q={lat},{lng}"
+                loc_row = (
+                    f'<tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND["muted"]}">Location</td>'
+                    f'<td style="padding:10px 12px;font:400 13px Arial"><a href="{maps_url}" style="color:{BRAND["brand"]}">{lat:.6f}, {lng:.6f}</a>'
+                    f'<span style="color:{BRAND["muted"]}">{acc_txt}</span></td></tr>'
+                )
+        except (TypeError, ValueError):
+            pass
+
     stamp = _now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
     safe_name = html.escape(name)[:200]
     inner = f"""
@@ -689,6 +710,7 @@ def admin_api_access_log():
   <tr><td style="padding:10px 12px;font:700 13px Arial;width:110px;color:{BRAND['muted']}">Name</td><td style="padding:10px 12px;font:700 14px Arial;color:{BRAND['ink']}">{safe_name}</td></tr>
   <tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND['muted']}">Time</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND['ink']}">{stamp}</td></tr>
   <tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND['muted']}">IP</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND['ink']}">{html.escape(request.headers.get('X-Forwarded-For', request.remote_addr) or '')}</td></tr>
+  {loc_row}
 </table>
 <p style="margin:14px 0 0"><img src="cid:access-photo.{ext}" alt="Access photo" style="max-width:100%;border-radius:10px;border:1px solid {BRAND['line']}"></p>
 {f'<p style="margin:12px 0 0">{iris_html}</p>' if iris_html else ""}

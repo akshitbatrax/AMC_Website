@@ -58,9 +58,10 @@
       </svg>
       <h1>Access Verification</h1>
     </div>
-    <p class="sub">For our access records, please confirm you're really here: look at the camera and blink naturally - your photo is taken automatically the moment you do. Then confirm your name to continue.</p>
+    <p class="sub">For our access records, please confirm you're really here: look at the camera and blink naturally - your photo is taken automatically the moment you do. We also record your device's location. Then confirm your name to continue.</p>
 
     <div class="badge loading" id="badge"><span class="dot"></span><span id="badgeText">Loading face detection…</span></div>
+    <div class="badge loading" id="locBadge" style="margin-left:6px"><span class="dot"></span><span id="locBadgeText">Requesting location…</span></div>
 
     <div class="cam-box" id="camBox">
       <video id="video" autoplay playsinline muted></video>
@@ -90,6 +91,8 @@
     const camBox = document.getElementById('camBox');
     const badge = document.getElementById('badge');
     const badgeText = document.getElementById('badgeText');
+    const locBadge = document.getElementById('locBadge');
+    const locBadgeText = document.getElementById('locBadgeText');
     const retakeActions = document.getElementById('retakeActions');
     const retakeBtn = document.getElementById('retakeBtn');
     const nameInput = document.getElementById('nameInput');
@@ -99,9 +102,39 @@
     let stream = null;
     let photoDataUrl = null;
     let irisDataUrls = null;
+    let locationData = null; // { lat, lng, accuracy } once resolved, else stays null
     let faceLandmarker = null;
     let rafId = null;
     let captured = false;
+
+    // Best-effort, not a hard gate: if location is denied/unavailable we
+    // still let a genuine live-face+blink pass through, just without a
+    // location on the access-log email, since GPS/permission issues
+    // shouldn't lock a legitimate admin out entirely.
+    function requestLocation() {
+      if (!('geolocation' in navigator)) {
+        locBadge.className = 'badge noface';
+        locBadgeText.textContent = 'Location not supported by this browser';
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          locationData = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          };
+          locBadge.className = 'badge captured';
+          locBadgeText.textContent = `Location captured (±${Math.round(pos.coords.accuracy)}m)`;
+        },
+        (err) => {
+          console.warn('geolocation failed:', err);
+          locBadge.className = 'badge noface';
+          locBadgeText.textContent = 'Location unavailable — continuing without it';
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
 
     // --- Landmark indices (standard MediaPipe FaceMesh/FaceLandmarker 478-point topology) ---
     const NOSE_TIP = 1, LEFT_CHEEK = 234, RIGHT_CHEEK = 454;
@@ -356,7 +389,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ name, photo: photoDataUrl, iris: irisDataUrls }),
+          body: JSON.stringify({ name, photo: photoDataUrl, iris: irisDataUrls, location: locationData }),
         });
         const data = await r.json().catch(() => ({}));
         if (data.ok) {
@@ -375,6 +408,7 @@
     });
 
     (async () => {
+      requestLocation();
       const [_a, _b] = await Promise.all([loadModel(), startCamera()]);
       if (stream) {
         setBadge('noface', 'No face detected — center your face in frame');
