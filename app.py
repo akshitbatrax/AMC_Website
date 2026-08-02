@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import os, re, hashlib, hmac, json, uuid, threading, time, fcntl, base64
+import os, re, hashlib, hmac, html, json, uuid, threading, time, fcntl, base64
 from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from urllib.request import urlopen, Request
@@ -612,7 +612,8 @@ def admin_login_post():
     if hmac.compare_digest(user, str(ADMIN_USER_ID)) and hmac.compare_digest(pwd, str(ADMIN_PASS)):
         session["authed"] = True
         session["who"] = ADMIN_USER_ID
-        return redirect(url_for("admin_dashboard_page"))
+        session.pop("access_logged", None)  # every fresh login re-asks for photo+name, even if a prior session had it
+        return redirect(url_for("admin_verify_page", next="/admin"))
     return redirect(url_for("admin_login_page", error="1"))
 
 @app.get("/admin/logout")
@@ -620,10 +621,74 @@ def admin_logout():
     session.clear()
     return redirect(url_for("admin_login_page"))
 
+def _safe_next(next_path: str | None) -> str:
+    # Only ever redirect to one of our own admin pages - never an arbitrary
+    # external URL from a query param.
+    if next_path in ("/admin", "/invoice-generator.html"):
+        return next_path
+    return "/admin"
+
+@app.get("/admin/verify")
+def admin_verify_page():
+    if not _is_authed():
+        return redirect(url_for("admin_login_page"))
+    next_path = _safe_next(request.args.get("next"))
+    if session.get("access_logged") is True:
+        return redirect(next_path)
+    return send_from_directory(STATIC_DIR, "admin-verify.html")
+
+@app.post("/admin/api/access-log")
+def admin_api_access_log():
+    guard = _require_authed_api()
+    if guard: return guard
+
+    body = request.get_json(silent=True) or {}
+    name = (body.get("name") or "").strip()
+    photo_data_url = body.get("photo") or ""
+    m = re.match(r"^data:image/(png|jpeg);base64,(.+)$", photo_data_url, re.DOTALL)
+    if not name or not m:
+        return jsonify({"ok": False, "error": "A name and a captured photo are both required."}), 400
+
+    ext = "png" if m.group(1) == "png" else "jpg"
+    try:
+        photo_bytes = base64.b64decode(m.group(2))
+    except Exception:
+        return jsonify({"ok": False, "error": "Could not decode photo."}), 400
+    if len(photo_bytes) > 8 * 1024 * 1024:
+        return jsonify({"ok": False, "error": "Photo too large."}), 400
+
+    stamp = _now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
+    safe_name = html.escape(name)[:200]
+    inner = f"""
+<h2 style="margin:0 0 8px;font:700 18px Arial;color:{BRAND['ink']}">🔐 Office Use Only — Access Log</h2>
+<p style="margin:0 0 12px;font:400 14px Arial;color:{BRAND['muted']}">Someone logged into the admin/office area and completed the access-verification step.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid {BRAND['line']};border-radius:10px">
+  <tr><td style="padding:10px 12px;font:700 13px Arial;width:110px;color:{BRAND['muted']}">Name</td><td style="padding:10px 12px;font:700 14px Arial;color:{BRAND['ink']}">{safe_name}</td></tr>
+  <tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND['muted']}">Time</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND['ink']}">{stamp}</td></tr>
+  <tr><td style="padding:10px 12px;font:700 13px Arial;color:{BRAND['muted']}">IP</td><td style="padding:10px 12px;font:400 13px Arial;color:{BRAND['ink']}">{html.escape(request.headers.get('X-Forwarded-For', request.remote_addr) or '')}</td></tr>
+</table>
+<p style="margin:14px 0 0"><img src="cid:access-photo.{ext}" alt="Access photo" style="max-width:100%;border-radius:10px;border:1px solid {BRAND['line']}"></p>
+"""
+    try:
+        send_email(
+            f"Office Use Only — Access Log: {name}",
+            email_shell_html(f"Access log: {name}", inner),
+            to=[HEALTH_CHECK_EMAIL],
+            inline_images=[(f"access-photo.{ext}", photo_bytes)],
+        )
+    except Exception:
+        app.logger.exception("access-log email failed")
+        return jsonify({"ok": False, "error": "Could not send the access log email - please try again."}), 502
+
+    session["access_logged"] = True
+    return jsonify({"ok": True})
+
 @app.get("/admin")
 def admin_dashboard_page():
     if not _is_authed():
         return redirect(url_for("admin_login_page"))
+    if not session.get("access_logged"):
+        return redirect(url_for("admin_verify_page", next="/admin"))
     return send_from_directory(STATIC_DIR, "admin.html")
 
 # The invoice generator used to be gated only by a password hardcoded in its
@@ -634,6 +699,8 @@ def admin_dashboard_page():
 def invoice_generator_page():
     if not _is_authed():
         return redirect(url_for("admin_login_page"))
+    if not session.get("access_logged"):
+        return redirect(url_for("admin_verify_page", next="/invoice-generator.html"))
     return send_from_directory(STATIC_DIR, "invoice-generator.html")
 
 # ---------------- Admin APIs (protected) ----------------
