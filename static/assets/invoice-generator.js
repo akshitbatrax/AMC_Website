@@ -36,6 +36,148 @@ function renderItemsForm(){
 function upd(i,k,v){items[i][k]=v;render();}
 function delItem(i){items.splice(i,1);renderItemsForm();render();}
 
+/* ---------- import items from file (Excel/Word/PDF/scanned image) ---------- */
+const IMPORT_ACCEPT='.xlsx,.xlsm,.xls,.csv,.docx,.pdf,.png,.jpg,.jpeg,.webp,.bmp';
+const IMPORT_MAX_FILES=6;
+let importFiles=[];
+let importResult=null; // {items:[{desc,hsn,qty,rate,per,_include}], warnings:[]}
+
+function openImportModal(){
+  importFiles=[]; importResult=null;
+  document.getElementById('importOverlay').classList.add('open');
+  document.getElementById('importModal').classList.add('open');
+  renderImportPicker();
+}
+function closeImportModal(){
+  document.getElementById('importOverlay').classList.remove('open');
+  document.getElementById('importModal').classList.remove('open');
+}
+
+function renderImportPicker(){
+  const body=document.getElementById('importBody');
+  body.innerHTML=`
+    <div class="drop-zone" id="dropZone">
+      <div class="dz-icon">📄</div>
+      <div class="dz-title">Click to browse or drag files here</div>
+      <div class="dz-sub">Excel, Word, PDF, or a photo/scan of an invoice or quotation<br>up to ${IMPORT_MAX_FILES} files, 8MB each — you can mix formats</div>
+    </div>
+    <input type="file" id="importFileInput" multiple accept="${IMPORT_ACCEPT}" style="display:none" onchange="onImportFilesPicked(this.files);this.value=''">
+    <div class="file-chip-list" id="fileChipList"></div>
+    <div class="import-actions">
+      <button class="btn-ghost" onclick="closeImportModal()">Cancel</button>
+      <button class="btn-primary" id="extractBtn" disabled onclick="runImportExtraction()">Extract items</button>
+    </div>`;
+  renderFileChips();
+  const dz=document.getElementById('dropZone');
+  const input=document.getElementById('importFileInput');
+  dz.onclick=()=>input.click();
+  ['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();dz.classList.remove('drag');}));
+  dz.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) addImportFiles(e.dataTransfer.files); });
+}
+function onImportFilesPicked(fileList){ addImportFiles(fileList); }
+function addImportFiles(fileList){
+  for(const f of fileList){
+    if(importFiles.length>=IMPORT_MAX_FILES) break;
+    if(importFiles.some(x=>x.name===f.name && x.size===f.size)) continue;
+    importFiles.push(f);
+  }
+  renderFileChips();
+}
+function removeImportFile(i){ importFiles.splice(i,1); renderFileChips(); }
+function renderFileChips(){
+  const list=document.getElementById('fileChipList');
+  if(!list) return;
+  list.innerHTML=importFiles.map((f,i)=>`<span class="file-chip"><span class="nm">${esc(f.name)}</span><button class="rm" onclick="removeImportFile(${i})">×</button></span>`).join('');
+  const btn=document.getElementById('extractBtn');
+  if(btn) btn.disabled=importFiles.length===0;
+}
+
+async function runImportExtraction(){
+  const body=document.getElementById('importBody');
+  body.innerHTML=`<div class="import-loading"><div class="spinner"></div><div class="txt">Reading your files and detecting line items…<br>Scanned images can take a little longer.</div></div>`;
+  const fd=new FormData();
+  importFiles.forEach(f=>fd.append('files',f));
+  try{
+    const r=await fetch('/admin/api/extract-invoice',{method:'POST',body:fd,credentials:'same-origin'});
+    const j=await r.json().catch(()=>null);
+    if(!j || !r.ok || !j.ok){
+      renderImportError((j&&j.error)||'Something went wrong while reading the files.');
+      return;
+    }
+    importResult={ items:(j.items||[]).map(it=>({...it,_include:true})), warnings:j.warnings||[] };
+    renderImportReview();
+  }catch(e){
+    renderImportError('Could not reach the server. Check your connection and try again.');
+  }
+}
+function renderImportError(msg){
+  const body=document.getElementById('importBody');
+  body.innerHTML=`<div class="import-err">⚠️ ${esc(msg)}</div>
+    <div class="import-actions"><button class="btn-ghost" onclick="renderImportPicker()">Back</button></div>`;
+}
+
+function renderImportReview(){
+  const body=document.getElementById('importBody');
+  const {items,warnings}=importResult;
+  const warnHtml=warnings.length?`<div class="import-warn"><strong>⚠️ Please double-check these before inserting:</strong><ul>${warnings.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>`:'';
+  if(!items.length){
+    body.innerHTML=warnHtml+`<div class="import-err">No line items could be detected in the file(s) you uploaded.</div>
+      <div class="import-actions"><button class="btn-ghost" onclick="renderImportPicker()">Back</button></div>`;
+    return;
+  }
+  body.innerHTML=`
+    ${warnHtml}
+    <div class="review-toolbar">
+      <span class="cnt" id="reviewCnt"></span>
+      <span class="links"><button type="button" onclick="setAllImportItems(true)">Select all</button> · <button type="button" onclick="setAllImportItems(false)">Select none</button></span>
+    </div>
+    <table class="review-table">
+      <thead><tr><th></th><th style="width:32%">Description</th><th>HSN</th><th>Qty</th><th>Rate</th><th>Per</th></tr></thead>
+      <tbody id="reviewBody"></tbody>
+    </table>
+    <div class="import-actions">
+      <button class="btn-ghost" onclick="renderImportPicker()">Back</button>
+      <button class="btn-primary" id="insertBtn" onclick="insertImportedItems()">Insert items</button>
+    </div>`;
+  renderReviewRows();
+}
+function renderReviewRows(){
+  const tb=document.getElementById('reviewBody');
+  tb.innerHTML=importResult.items.map((it,i)=>`
+    <tr class="${it._include?'':'excluded'}">
+      <td><input type="checkbox" ${it._include?'checked':''} onchange="toggleImportItem(${i},this.checked)"></td>
+      <td><textarea oninput="updImportItem(${i},'desc',this.value)">${esc(it.desc)}</textarea></td>
+      <td><input value="${esc(it.hsn)}" oninput="updImportItem(${i},'hsn',this.value)"></td>
+      <td><input value="${esc(it.qty)}" oninput="updImportItem(${i},'qty',this.value)"></td>
+      <td><input value="${esc(it.rate)}" oninput="updImportItem(${i},'rate',this.value)"></td>
+      <td><input value="${esc(it.per)}" oninput="updImportItem(${i},'per',this.value)"></td>
+    </tr>`).join('');
+  updateReviewCount();
+}
+function toggleImportItem(i,val){
+  importResult.items[i]._include=val;
+  const row=document.querySelectorAll('#reviewBody tr')[i];
+  if(row) row.classList.toggle('excluded',!val);
+  updateReviewCount();
+}
+function updImportItem(i,k,v){ importResult.items[i][k]=v; }
+function setAllImportItems(val){ importResult.items.forEach(it=>it._include=val); renderReviewRows(); }
+function updateReviewCount(){
+  const n=importResult.items.filter(it=>it._include).length;
+  const cnt=document.getElementById('reviewCnt');
+  if(cnt) cnt.textContent=`${n} of ${importResult.items.length} selected`;
+  const btn=document.getElementById('insertBtn');
+  if(btn) btn.disabled=n===0;
+}
+function insertImportedItems(){
+  importResult.items.filter(it=>it._include).forEach(it=>{
+    items.push({desc:it.desc,hsn:it.hsn,qty:it.qty,rate:it.rate,per:it.per||'Nos'});
+  });
+  renderItemsForm(); render();
+  closeImportModal();
+}
+
 /* ---------- helpers ---------- */
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function nl2br(s){return esc(s).replace(/\n/g,'<br>');}

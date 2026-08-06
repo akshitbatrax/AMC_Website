@@ -3,14 +3,18 @@
 
 from __future__ import annotations
 
-import os, re, hashlib, hmac, html, json, uuid, threading, time, fcntl, base64
+import os, re, csv, hashlib, hmac, html, json, uuid, threading, time, fcntl, base64
 from datetime import datetime, timezone, timedelta
-from io import BytesIO
+from io import BytesIO, StringIO
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
 
 from PIL import Image, ImageDraw, ImageFont
+
+import openpyxl
+from docx import Document as DocxDocument
+import fitz  # PyMuPDF
 
 from flask import (
     Flask, request, jsonify, send_from_directory, redirect,
@@ -101,7 +105,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
 app.config["SECRET_KEY"] = SECRET_KEY
-app.config["MAX_CONTENT_LENGTH"] = (MAX_EMAIL_MB + 5) * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = max((MAX_EMAIL_MB + 5), 48) * 1024 * 1024
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (env("SESSION_COOKIE_SECURE", "0") or "0") == "1"
@@ -951,6 +955,343 @@ def admin_api_invoice_commit():
 
     n = _with_invoice_seq_lock(mutate)
     return jsonify({"ok": True, "number": _format_invoice_number(fy_short, mon_abbr, n)})
+
+# ---------------- Invoice: "Import from file" ----------------
+# Fully local parsing, no paid API. Excel/Word/text-based PDFs are read
+# directly and mapped into invoice line items via header-keyword + numeric
+# heuristics; scanned/photographed images (and PDFs with no text layer) go
+# through a local OCR engine (rapidocr-onnxruntime - pure pip install, no
+# system tesseract binary, which Render's native Python build can't install
+# anyway since it has no root/apt access).
+IMPORT_MAX_FILES     = 6
+IMPORT_MAX_MB        = 8
+IMPORT_MAX_PDF_PAGES = 6
+IMPORT_OCR_MAX_DIM   = 1900  # downscale before OCR to bound memory/time on the (512MB) server
+
+_ocr_engine_singleton = None
+def _ocr_engine():
+    # Imported lazily - rapidocr/onnxruntime/opencv are a heavy chunk of
+    # dependencies that should only occupy memory in a worker that actually
+    # processes an image, not in every idle worker.
+    global _ocr_engine_singleton
+    if _ocr_engine_singleton is None:
+        from rapidocr_onnxruntime import RapidOCR
+        _ocr_engine_singleton = RapidOCR()
+    return _ocr_engine_singleton
+
+_HEADER_SYNONYMS = {
+    "desc": ["description","item description","item name","item","particulars","product","service",
+             "goods","details","material","work description","scope of work"],
+    "hsn":  ["hsn sac","hsn/sac","hsn code","sac code","hsn","sac"],
+    "qty":  ["quantity","qty","qty.","units","nos","no of units"],
+    "rate": ["unit price","rate/unit","unit rate","rate (rs.)","price/unit","rate","price","cost"],
+    "per":  ["unit of measure","uom","u.o.m","unit","per"],
+    "amount": ["taxable value","line total","net amount","amount (rs.)","amount","total","value"],
+}
+_SKIP_ROW_WORDS = [
+    "subtotal", "sub total", "grand total", "total amount", "amount in words", "amount chargeable",
+    "cgst", "sgst", "igst", "gst @", "terms & condition", "terms and condition", "declaration",
+    "bank details", "authorised signatory", "authorized signatory", "e & o.e", "thank you for",
+]
+
+def _norm_header(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(s or "").strip().lower()).strip()
+
+def _clean_num(s) -> float | None:
+    if s is None:
+        return None
+    t = re.sub(r"[^\d.\-]", "", str(s).replace(",", ""))
+    if not t or t in ("-", "."):
+        return None
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+def _fmt_num(v) -> str:
+    if v is None:
+        return "0"
+    v = float(v)
+    return str(int(v)) if v.is_integer() else f"{v:.2f}".rstrip("0").rstrip(".")
+
+def _map_header_row(row: list) -> dict[str, int] | None:
+    """Try to identify which column index is which invoice field. Returns
+    None if this row doesn't look like a header row at all."""
+    norm = [_norm_header(c) for c in row]
+    mapping: dict[str, int] = {}
+    for field, syns in _HEADER_SYNONYMS.items():
+        for i, cell in enumerate(norm):
+            if not cell or i in mapping.values():
+                continue
+            if any(cell == s or cell.startswith(s) for s in syns):
+                mapping[field] = i
+                break
+    if "desc" in mapping and ({"qty", "rate", "amount"} & mapping.keys()):
+        return mapping
+    return None
+
+def _is_skip_row(cells: list) -> bool:
+    joined = " ".join(str(c or "") for c in cells).strip().lower()
+    if not joined:
+        return True
+    return any(w in joined for w in _SKIP_ROW_WORDS)
+
+def _rows_to_items(rows: list[list]) -> tuple[list[dict], list[str]]:
+    """Core heuristic mapper shared by every file format: scan the first few
+    rows for a recognizable column header, then map every row under it into
+    an item dict. Falls back to a positional number-guessing pass (used
+    mainly for OCR output, which rarely has a clean header row) when no
+    header is found."""
+    warnings: list[str] = []
+    header_idx, mapping = None, None
+    for i, row in enumerate(rows[:15]):
+        m = _map_header_row(row)
+        if m:
+            header_idx, mapping = i, m
+            break
+
+    if mapping is None:
+        items = []
+        for row in rows:
+            if _is_skip_row(row):
+                continue
+            cells = [str(c if c is not None else "").strip() for c in row]
+            nums = [v for c in cells if (v := _clean_num(c)) is not None and v > 0]
+            texts = [c for c in cells if c and _clean_num(c) is None]
+            if not nums or not texts:
+                continue
+            desc = max(texts, key=len)
+            if len(nums) == 1:
+                qty, rate = 1, nums[0]
+            else:
+                qty, rate = nums[0], nums[1]
+            items.append({"desc": desc, "hsn": "", "qty": _fmt_num(qty), "rate": _fmt_num(rate), "per": "Nos"})
+        if items:
+            warnings.append("No clear column headers were found - items were guessed from number positions. Please review carefully.")
+        return items, warnings
+
+    assert header_idx is not None
+    # Left-to-right field order as detected (e.g. desc, hsn, qty, rate, amount).
+    sorted_fields = sorted(mapping.items(), key=lambda kv: kv[1])
+
+    def row_to_dict(cells: list[str]) -> dict[str, str]:
+        """Maps a data row's cells onto the header fields by position. OCR'd
+        rows sometimes have fewer cells than the header (two adjacent text
+        columns - typically description and HSN - got fused into one text
+        blob by the OCR engine). In that case a straight index lookup would
+        silently shift every later numeric column left by one, turning a
+        correct qty/rate into a wrong-but-plausible one. Instead, the leading
+        field absorbs the fused text and the remaining fields are aligned to
+        the *end* of the row, since numeric columns (qty/rate/amount) almost
+        never fuse with each other - only with an adjacent text column."""
+        m, n = len(sorted_fields), len(cells)
+        if n >= m:
+            return {field: cells[idx] for field, idx in sorted_fields if idx < n}
+        d = {sorted_fields[0][0]: cells[0] if cells else ""}
+        rest_fields, rest_cells = sorted_fields[1:], cells[1:]
+        pad = len(rest_fields) - len(rest_cells)
+        for i, (field, _idx) in enumerate(rest_fields):
+            d[field] = "" if i < pad else rest_cells[i - pad]
+        return d
+
+    items = []
+    for row in rows[header_idx + 1:]:
+        cells = [str(c if c is not None else "").strip() for c in row]
+        if not any(cells) or _is_skip_row(cells):
+            continue
+        d = row_to_dict(cells)
+        desc = d.get("desc", "")
+        if not desc:
+            continue
+        qty_v = _clean_num(d.get("qty", ""))
+        rate_v = _clean_num(d.get("rate", ""))
+        amt_v = _clean_num(d.get("amount", ""))
+        if qty_v is None and rate_v is None and amt_v is None:
+            continue  # not an item row - likely a wrapped/continuation line
+        if qty_v is None:
+            qty_v = 1
+        if rate_v is None:
+            rate_v = (amt_v / qty_v) if (amt_v is not None and qty_v) else (amt_v or 0)
+        items.append({
+            "desc": desc, "hsn": d.get("hsn", ""),
+            "qty": _fmt_num(qty_v), "rate": _fmt_num(rate_v),
+            "per": d.get("per") or "Nos",
+        })
+    return items, warnings
+
+def _extract_xlsx_rows(data: bytes) -> list[list]:
+    wb = openpyxl.load_workbook(BytesIO(data), data_only=True, read_only=True)
+    rows = []
+    for ws in wb.worksheets:
+        for row in ws.iter_rows(values_only=True):
+            if row is None or all(c is None for c in row):
+                continue
+            rows.append(list(row))
+    return rows
+
+def _extract_xls_rows(data: bytes) -> list[list]:
+    import xlrd
+    wb = xlrd.open_workbook(file_contents=data)
+    rows = []
+    for sheet in wb.sheets():
+        for r in range(sheet.nrows):
+            row = sheet.row_values(r)
+            if any(str(c).strip() for c in row):
+                rows.append(row)
+    return rows
+
+def _extract_csv_rows(data: bytes) -> list[list]:
+    text = data.decode("utf-8", errors="replace")
+    return [row for row in csv.reader(StringIO(text)) if any(c.strip() for c in row)]
+
+def _extract_docx_rows(data: bytes) -> list[list]:
+    doc = DocxDocument(BytesIO(data))
+    rows = []
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [c.text.strip() for c in row.cells]
+            if any(cells):
+                rows.append(cells)
+    if not rows:
+        # No tables in the document - fall back to splitting paragraph lines
+        # on runs of whitespace/tabs (common for plain-text-pasted invoices).
+        for p in doc.paragraphs:
+            t = p.text.strip()
+            if not t:
+                continue
+            parts = re.split(r"\t+|\s{2,}", t)
+            if len(parts) >= 2:
+                rows.append(parts)
+    return rows
+
+def _extract_pdf_rows(data: bytes) -> tuple[list[list], list[bytes], list[str]]:
+    """Returns (table_rows, page_images_needing_ocr, warnings). A PDF with a
+    real text layer is parsed directly (PyMuPDF's built-in table detection);
+    a PDF that's just a scan/photo with no text layer is rasterized to page
+    images instead, for the OCR path."""
+    doc = fitz.open(stream=data, filetype="pdf")
+    rows = []
+    total_chars = 0
+    for page in doc:
+        total_chars += len(page.get_text().strip())
+        try:
+            for tbl in page.find_tables().tables:
+                for row in tbl.extract():
+                    cells = [str(c or "").strip() for c in row]
+                    if any(cells):
+                        rows.append(cells)
+        except Exception:
+            pass
+    avg_chars = total_chars / max(len(doc), 1)
+    if rows or avg_chars >= 15:
+        return rows, [], []
+
+    warnings = []
+    n_pages = min(len(doc), IMPORT_MAX_PDF_PAGES)
+    if len(doc) > IMPORT_MAX_PDF_PAGES:
+        warnings.append(f"PDF has {len(doc)} pages - only the first {IMPORT_MAX_PDF_PAGES} were scanned.")
+    images = [doc[i].get_pixmap(dpi=200).tobytes("png") for i in range(n_pages)]
+    return [], images, warnings
+
+def _ocr_image_to_rows(img_bytes: bytes) -> list[list]:
+    import numpy as np
+    im = Image.open(BytesIO(img_bytes)).convert("RGB")
+    w, h = im.size
+    longest = max(w, h)
+    if longest > IMPORT_OCR_MAX_DIM:
+        scale = IMPORT_OCR_MAX_DIM / longest
+        im = im.resize((max(1, int(w * scale)), max(1, int(h * scale))))
+    result, _elapse = _ocr_engine()(np.array(im))
+    if not result:
+        return []
+    boxes = []
+    for box, text, _score in result:
+        xs = [p[0] for p in box]; ys = [p[1] for p in box]
+        boxes.append({"x0": min(xs), "y0": min(ys), "y1": max(ys), "cy": (min(ys) + max(ys)) / 2, "text": text})
+    boxes.sort(key=lambda b: b["cy"])
+    clusters: list[list[dict]] = []
+    for b in boxes:
+        placed = False
+        for c in clusters:
+            avg_h = sum((x["y1"] - x["y0"]) for x in c) / len(c)
+            avg_cy = sum(x["cy"] for x in c) / len(c)
+            if abs(b["cy"] - avg_cy) < max(avg_h, 8) * 0.6:
+                c.append(b); placed = True; break
+        if not placed:
+            clusters.append([b])
+    rows = []
+    for c in clusters:
+        c.sort(key=lambda b: b["x0"])
+        rows.append([b["text"] for b in c])
+    return rows
+
+_IMPORT_EXT_KIND = {
+    ".xlsx": "xlsx", ".xlsm": "xlsx", ".xls": "xls", ".csv": "csv",
+    ".docx": "docx", ".pdf": "pdf",
+    ".png": "img", ".jpg": "img", ".jpeg": "img", ".webp": "img", ".bmp": "img",
+}
+
+@app.post("/admin/api/extract-invoice")
+def admin_api_extract_invoice():
+    guard = _require_authed_api()
+    if guard: return guard
+
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"ok": False, "error": "No files uploaded."}), 400
+    if len(files) > IMPORT_MAX_FILES:
+        return jsonify({"ok": False, "error": f"Please upload at most {IMPORT_MAX_FILES} files at a time."}), 400
+
+    all_items = []
+    warnings = []
+    for f in files:
+        name = f.filename or "file"
+        ext = os.path.splitext(name)[1].lower()
+        kind = _IMPORT_EXT_KIND.get(ext)
+        if kind is None:
+            warnings.append(f"{name}: unsupported file type ({ext or 'unknown'}).")
+            continue
+
+        data = f.read()
+        if len(data) > IMPORT_MAX_MB * 1024 * 1024:
+            warnings.append(f"{name}: skipped - over {IMPORT_MAX_MB}MB.")
+            continue
+
+        try:
+            rows: list[list] = []
+            if kind == "xlsx":
+                rows = _extract_xlsx_rows(data)
+            elif kind == "xls":
+                rows = _extract_xls_rows(data)
+            elif kind == "csv":
+                rows = _extract_csv_rows(data)
+            elif kind == "docx":
+                rows = _extract_docx_rows(data)
+            elif kind == "pdf":
+                rows, images, pdf_warnings = _extract_pdf_rows(data)
+                warnings.extend(f"{name}: {w}" for w in pdf_warnings)
+                if images:
+                    for img in images:
+                        rows.extend(_ocr_image_to_rows(img))
+                    warnings.append(f"{name}: this looked like a scanned PDF - text was read with OCR, please double-check the numbers.")
+            elif kind == "img":
+                rows = _ocr_image_to_rows(data)
+                warnings.append(f"{name}: read with OCR - please double-check descriptions, HSN codes and numbers.")
+        except Exception:
+            app.logger.exception(f"extract-invoice failed on {name}")
+            warnings.append(f"{name}: could not be read - the file may be corrupted or password-protected.")
+            continue
+
+        items, item_warnings = _rows_to_items(rows)
+        warnings.extend(f"{name}: {w}" for w in item_warnings)
+        if not items:
+            warnings.append(f"{name}: no line items could be detected.")
+        all_items.extend(items)
+
+    if not all_items and not any(not w.endswith("no line items could be detected.") for w in warnings):
+        return jsonify({"ok": False, "error": "Could not detect any line items in the uploaded file(s).", "warnings": warnings}), 400
+
+    return jsonify({"ok": True, "items": all_items, "warnings": warnings})
 
 # ---------------- Static / Index ----------------
 # Only ever serve files out of STATIC_DIR. Never serve arbitrary paths from
