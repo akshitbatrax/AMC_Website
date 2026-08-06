@@ -972,15 +972,28 @@ IMPORT_MAX_OCR_OPS   = 8     # hard cap on images/scanned-pages OCR'd per reques
                              # to run OCR an unbounded number of times back to back
 IMPORT_OCR_MAX_DIM   = 1280  # downscale before OCR to bound memory/time on the (512MB) server
 
+# Gunicorn here runs one worker with several threads (see the Render start
+# command), not one process per request, so this whole module's globals are
+# shared across concurrent requests. This lock keeps the extract-invoice
+# endpoint itself serialized - two people importing scanned files at the same
+# moment must not run OCR concurrently, since a single OCR call already gets
+# close to this instance's 512MB ceiling on its own - while every other route
+# (the public site, admin dashboard, etc.) keeps responding immediately on
+# other threads instead of queuing behind a 40-50s OCR request.
+_extract_invoice_lock = threading.Lock()
+
 _ocr_engine_singleton = None
+_ocr_engine_init_lock = threading.Lock()
 def _ocr_engine():
     # Imported lazily - rapidocr/onnxruntime/opencv are a heavy chunk of
     # dependencies that should only occupy memory in a worker that actually
     # processes an image, not in every idle worker.
     global _ocr_engine_singleton
     if _ocr_engine_singleton is None:
-        from rapidocr_onnxruntime import RapidOCR
-        _ocr_engine_singleton = RapidOCR()
+        with _ocr_engine_init_lock:
+            if _ocr_engine_singleton is None:
+                from rapidocr_onnxruntime import RapidOCR
+                _ocr_engine_singleton = RapidOCR()
     return _ocr_engine_singleton
 
 _HEADER_SYNONYMS = {
@@ -1252,7 +1265,10 @@ _IMPORT_EXT_KIND = {
 def admin_api_extract_invoice():
     guard = _require_authed_api()
     if guard: return guard
+    with _extract_invoice_lock:
+        return _admin_api_extract_invoice_impl()
 
+def _admin_api_extract_invoice_impl():
     files = request.files.getlist("files")
     if not files:
         return jsonify({"ok": False, "error": "No files uploaded."}), 400
