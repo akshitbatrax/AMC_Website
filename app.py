@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import os, re, csv, hashlib, hmac, html, json, uuid, threading, time, fcntl, base64
+import os, re, csv, gc, hashlib, hmac, html, json, uuid, threading, time, fcntl, base64
 from datetime import datetime, timezone, timedelta
 from io import BytesIO, StringIO
 from urllib.request import urlopen, Request
@@ -966,7 +966,11 @@ def admin_api_invoice_commit():
 IMPORT_MAX_FILES     = 6
 IMPORT_MAX_MB        = 8
 IMPORT_MAX_PDF_PAGES = 6
-IMPORT_OCR_MAX_DIM   = 1900  # downscale before OCR to bound memory/time on the (512MB) server
+IMPORT_MAX_OCR_OPS   = 8     # hard cap on images/scanned-pages OCR'd per request, across every file combined -
+                             # this free instance has 512MB total RAM and OCR has come within a few MB of it
+                             # in testing, so a request with several large scanned files must not be allowed
+                             # to run OCR an unbounded number of times back to back
+IMPORT_OCR_MAX_DIM   = 1280  # downscale before OCR to bound memory/time on the (512MB) server
 
 _ocr_engine_singleton = None
 def _ocr_engine():
@@ -1194,6 +1198,11 @@ def _extract_pdf_rows(data: bytes) -> tuple[list[list], list[bytes], list[str]]:
     return [], images, warnings
 
 def _ocr_image_to_rows(img_bytes: bytes) -> list[list]:
+    # This server runs on a 512MB instance and OCR has been measured to come
+    # within single-digit MB of that ceiling for one modest image - every bit
+    # of memory given back between calls matters, so intermediates are
+    # deleted and gc'd explicitly rather than left for whenever Python
+    # normally would.
     import numpy as np
     im = Image.open(BytesIO(img_bytes)).convert("RGB")
     w, h = im.size
@@ -1201,13 +1210,20 @@ def _ocr_image_to_rows(img_bytes: bytes) -> list[list]:
     if longest > IMPORT_OCR_MAX_DIM:
         scale = IMPORT_OCR_MAX_DIM / longest
         im = im.resize((max(1, int(w * scale)), max(1, int(h * scale))))
-    result, _elapse = _ocr_engine()(np.array(im))
+    arr = np.array(im)
+    im.close(); del im
+    try:
+        result, _elapse = _ocr_engine()(arr)
+    finally:
+        del arr
     if not result:
+        gc.collect()
         return []
     boxes = []
     for box, text, _score in result:
         xs = [p[0] for p in box]; ys = [p[1] for p in box]
         boxes.append({"x0": min(xs), "y0": min(ys), "y1": max(ys), "cy": (min(ys) + max(ys)) / 2, "text": text})
+    del result
     boxes.sort(key=lambda b: b["cy"])
     clusters: list[list[dict]] = []
     for b in boxes:
@@ -1223,6 +1239,7 @@ def _ocr_image_to_rows(img_bytes: bytes) -> list[list]:
     for c in clusters:
         c.sort(key=lambda b: b["x0"])
         rows.append([b["text"] for b in c])
+    gc.collect()
     return rows
 
 _IMPORT_EXT_KIND = {
@@ -1244,6 +1261,8 @@ def admin_api_extract_invoice():
 
     all_items = []
     warnings = []
+    ocr_ops_used = 0
+    ocr_cap_hit = False
     for f in files:
         name = f.filename or "file"
         ext = os.path.splitext(name)[1].lower()
@@ -1255,6 +1274,10 @@ def admin_api_extract_invoice():
         data = f.read()
         if len(data) > IMPORT_MAX_MB * 1024 * 1024:
             warnings.append(f"{name}: skipped - over {IMPORT_MAX_MB}MB.")
+            continue
+
+        if kind in ("pdf", "img") and ocr_cap_hit:
+            warnings.append(f"{name}: skipped - reached the per-request limit of {IMPORT_MAX_OCR_OPS} scanned pages/images. Upload the rest in a separate request.")
             continue
 
         try:
@@ -1272,10 +1295,20 @@ def admin_api_extract_invoice():
                 warnings.extend(f"{name}: {w}" for w in pdf_warnings)
                 if images:
                     for img in images:
+                        if ocr_ops_used >= IMPORT_MAX_OCR_OPS:
+                            ocr_cap_hit = True
+                            warnings.append(f"{name}: stopped after {IMPORT_MAX_OCR_OPS} scanned pages to avoid overloading the server - upload the rest separately.")
+                            break
                         rows.extend(_ocr_image_to_rows(img))
+                        ocr_ops_used += 1
                     warnings.append(f"{name}: this looked like a scanned PDF - text was read with OCR, please double-check the numbers.")
             elif kind == "img":
+                if ocr_ops_used >= IMPORT_MAX_OCR_OPS:
+                    ocr_cap_hit = True
+                    warnings.append(f"{name}: skipped - reached the per-request limit of {IMPORT_MAX_OCR_OPS} scanned pages/images. Upload the rest in a separate request.")
+                    continue
                 rows = _ocr_image_to_rows(data)
+                ocr_ops_used += 1
                 warnings.append(f"{name}: read with OCR - please double-check descriptions, HSN codes and numbers.")
         except Exception:
             app.logger.exception(f"extract-invoice failed on {name}")
