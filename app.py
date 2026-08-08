@@ -957,20 +957,73 @@ def admin_api_invoice_commit():
     return jsonify({"ok": True, "number": _format_invoice_number(fy_short, mon_abbr, n)})
 
 # ---------------- Invoice: "Import from file" ----------------
-# Fully local parsing, no paid API. Excel/Word/text-based PDFs are read
-# directly and mapped into invoice line items via header-keyword + numeric
-# heuristics; scanned/photographed images (and PDFs with no text layer) go
-# through a local OCR engine (rapidocr-onnxruntime - pure pip install, no
-# system tesseract binary, which Render's native Python build can't install
-# anyway since it has no root/apt access).
+# Excel/Word/text-based PDFs are read directly and mapped into invoice line
+# items via header-keyword + numeric heuristics, fully locally, no API calls
+# involved either way. Scanned/photographed images (and PDFs with no text
+# layer) prefer OCR.space (see OCR_SPACE_API_KEY below) when configured -
+# offloads the OCR compute off this 512MB instance entirely and, tested
+# against a real scanned document, produced markedly cleaner text (correct
+# word spacing, tab-delimited table cells) than the local engine's
+# glued-together output. Local OCR (rapidocr-onnxruntime - pure pip install,
+# no system tesseract binary, which Render's native Python build can't
+# install anyway since it has no root/apt access) is kept as the fallback
+# for whenever no key is configured or the OCR.space call itself fails, so
+# this feature still works with zero external dependencies if needed.
 IMPORT_MAX_FILES     = 6
 IMPORT_MAX_MB        = 8
 IMPORT_MAX_PDF_PAGES = 6
-IMPORT_MAX_OCR_OPS   = 8     # hard cap on images/scanned-pages OCR'd per request, across every file combined -
-                             # this free instance has 512MB total RAM and OCR has come within a few MB of it
-                             # in testing, so a request with several large scanned files must not be allowed
-                             # to run OCR an unbounded number of times back to back
-IMPORT_OCR_MAX_DIM   = 1280  # downscale before OCR to bound memory/time on the (512MB) server
+IMPORT_MAX_OCR_OPS   = 8     # hard cap on images/scanned-pages OCR'd *locally* per request, across every file
+                             # combined - this free instance has 512MB total RAM and local OCR has come within
+                             # a few MB of it in testing, so a request falling back to it for several large
+                             # scanned files must not be allowed to run local OCR an unbounded number of times
+                             # back to back. Does not limit OCR.space calls - those cost this server nothing.
+IMPORT_OCR_MAX_DIM   = 1280  # downscale before *local* OCR to bound memory/time on the (512MB) server
+
+OCR_SPACE_API_KEY  = env("OCR_SPACE_API_KEY", "")
+OCR_SPACE_URL      = "https://api.ocr.space/parse/image"
+OCR_SPACE_TIMEOUT  = 45  # a multi-page scanned PDF can take a while server-side on OCR.space's end
+
+def _ocr_space_extract_rows(file_bytes: bytes, mimetype: str, is_pdf: bool) -> list[list] | None:
+    """Sends the whole file to OCR.space (Engine 2, table mode) in one call -
+    for a PDF this covers every page server-side, not one call per page like
+    the local fallback needs. Returns None (never []) on any failure -
+    missing key, network error, quota/rate-limit hit, bad response - so the
+    caller can fall back to local OCR instead of reporting "no items found"
+    when OCR.space just isn't available right now."""
+    if not OCR_SPACE_API_KEY:
+        return None
+    payload = {
+        "apikey": OCR_SPACE_API_KEY,
+        "base64Image": f"data:{mimetype};base64,{base64.b64encode(file_bytes).decode('ascii')}",
+        "OCREngine": "2",
+        "isTable": "true",
+        "scale": "true",
+    }
+    if is_pdf:
+        payload["filetype"] = "PDF"
+    req = Request(
+        OCR_SPACE_URL,
+        data=urlencode(payload).encode("utf-8"),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=OCR_SPACE_TIMEOUT) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        app.logger.exception("OCR.space request failed")
+        return None
+    if result.get("IsErroredOnProcessing"):
+        app.logger.warning(f"OCR.space error: {result.get('ErrorMessage')}")
+        return None
+    rows = []
+    for page in result.get("ParsedResults") or []:
+        for line in (page.get("ParsedText") or "").splitlines():
+            cells = [c.strip() for c in line.split("\t")]
+            cells = [c for c in cells if c]
+            if cells:
+                rows.append(cells)
+    return rows
 
 # Gunicorn here runs one worker with several threads (see the Render start
 # command), not one process per request, so this whole module's globals are
@@ -1006,9 +1059,13 @@ _HEADER_SYNONYMS = {
     "amount": ["taxable value","line total","net amount","amount (rs.)","amount","total","value"],
 }
 _SKIP_ROW_WORDS = [
-    "subtotal", "sub total", "grand total", "total amount", "amount in words", "amount chargeable",
+    "subtotal", "sub total", "grand total", "grandtotal", "total gst", "total amount", "amount in words", "amount chargeable",
     "cgst", "sgst", "igst", "gst @", "terms & condition", "terms and condition", "declaration",
     "bank details", "authorised signatory", "authorized signatory", "e & o.e", "thank you for",
+    # Contact-info lines (e.g. "Attn: Ms. X · +91 44 2625 8890", "Contact No  9350261279")
+    # can end in a number just like a real item row does - without this, they get misread
+    # as a bogus line item by the no-header numeric-position fallback.
+    "attn:", "attn.", "contact:", "contact no", "contact person", "tel:", "phone:", "mobile:", "fax:", "emp id",
 ]
 
 def _norm_header(s: str) -> str:
@@ -1025,6 +1082,20 @@ def _clean_num(s) -> float | None:
     except ValueError:
         return None
 
+def _looks_numeric(s) -> bool:
+    """True only if the *whole* cell is a number once currency/%/commas/
+    whitespace are stripped - unlike _clean_num alone, this rejects a cell
+    that merely contains a digit somewhere within real text (e.g. a column
+    header cell "AS PER Rev 1 (Original)" would otherwise read as the
+    number 1 - fine for "₹ 4,20,000.00", wrong for a label that just
+    happens to mention a number)."""
+    if not s:
+        return False
+    stripped = re.sub(r"[₹$€£%,\s]", "", str(s))
+    if not stripped or re.search(r"[A-Za-z]", stripped):
+        return False
+    return bool(re.fullmatch(r"-?\d+(?:\.\d+)?", stripped))
+
 def _fmt_num(v) -> str:
     if v is None:
         return "0"
@@ -1033,16 +1104,31 @@ def _fmt_num(v) -> str:
 
 def _map_header_row(row: list) -> dict[str, int] | None:
     """Try to identify which column index is which invoice field. Returns
-    None if this row doesn't look like a header row at all."""
+    None if this row doesn't look like a header row at all. Scans every
+    column for an *exact* synonym match first, across the whole row, before
+    falling back to a looser startswith match - not exact-or-startswith at
+    each column in turn. Otherwise a generic startswith synonym on an early
+    column (e.g. "material" matching "Material Code") would win over an
+    exact match on a later column ("Description" itself)."""
     norm = [_norm_header(c) for c in row]
     mapping: dict[str, int] = {}
     for field, syns in _HEADER_SYNONYMS.items():
+        candidate = None
         for i, cell in enumerate(norm):
             if not cell or i in mapping.values():
                 continue
-            if any(cell == s or cell.startswith(s) for s in syns):
-                mapping[field] = i
+            if cell in syns:
+                candidate = i
                 break
+        if candidate is None:
+            for i, cell in enumerate(norm):
+                if not cell or i in mapping.values():
+                    continue
+                if any(cell.startswith(s) for s in syns):
+                    candidate = i
+                    break
+        if candidate is not None:
+            mapping[field] = candidate
     if "desc" in mapping and ({"qty", "rate", "amount"} & mapping.keys()):
         return mapping
     return None
@@ -1054,34 +1140,56 @@ def _is_skip_row(cells: list) -> bool:
     return any(w in joined for w in _SKIP_ROW_WORDS)
 
 def _rows_to_items(rows: list[list]) -> tuple[list[dict], list[str]]:
-    """Core heuristic mapper shared by every file format: scan the first few
-    rows for a recognizable column header, then map every row under it into
-    an item dict. Falls back to a positional number-guessing pass (used
-    mainly for OCR output, which rarely has a clean header row) when no
-    header is found."""
+    """Core heuristic mapper shared by every file format: scan every row for
+    a recognizable column header (a real document can have any amount of
+    letterhead/metadata text before the item table starts), then map every
+    row under it into an item dict. Falls back to a positional
+    number-guessing pass (used mainly for OCR output, which rarely has a
+    clean header row) when no header is found."""
     warnings: list[str] = []
     header_idx, mapping = None, None
-    for i, row in enumerate(rows[:15]):
+    for i, row in enumerate(rows):
         m = _map_header_row(row)
         if m:
             header_idx, mapping = i, m
             break
 
     if mapping is None:
+        # A real item table realistically always has at least desc+qty+rate
+        # as separate columns (5+ is typical). A narrow 2-3 column table is
+        # a financial summary block (tax-rate breakdown, subtotal/grand-total
+        # pair) that happens to contain numbers, not a line-item table - too
+        # ambiguous to guess at once header detection has already failed.
+        if rows and max(len(r) for r in rows) < 4:
+            return [], []
         items = []
         for row in rows:
             if _is_skip_row(row):
                 continue
             cells = [str(c if c is not None else "").strip() for c in row]
-            nums = [v for c in cells if (v := _clean_num(c)) is not None and v > 0]
-            texts = [c for c in cells if c and _clean_num(c) is None]
+            cells = [c for c in cells if c]
+            if len(cells) < 3:
+                continue
+            nums = [v for c in cells if _looks_numeric(c) and (v := _clean_num(c)) is not None and v > 0]
+            texts = [c for c in cells if c and not _looks_numeric(c)]
             if not nums or not texts:
+                continue
+            if len(nums) > 4:
+                # More numeric-looking cells than any plain desc/hsn/qty/
+                # rate/amount row would have - too ambiguous to guess
+                # positionally, skip rather than record something
+                # plausible-looking but wrong.
                 continue
             desc = max(texts, key=len)
             if len(nums) == 1:
                 qty, rate = 1, nums[0]
             else:
                 qty, rate = nums[0], nums[1]
+            if rate == 0:
+                # A real business document essentially never prices a line
+                # item at a literal zero - a 0 here means the guess landed
+                # on two columns that are both something else entirely.
+                continue
             items.append({"desc": desc, "hsn": "", "qty": _fmt_num(qty), "rate": _fmt_num(rate), "per": "Nos"})
         if items:
             warnings.append("No clear column headers were found - items were guessed from number positions. Please review carefully.")
@@ -1090,6 +1198,17 @@ def _rows_to_items(rows: list[list]) -> tuple[list[dict], list[str]]:
     assert header_idx is not None
     # Left-to-right field order as detected (e.g. desc, hsn, qty, rate, amount).
     sorted_fields = sorted(mapping.items(), key=lambda kv: kv[1])
+    # A header with no rate *and* no amount column at all (a quantity-only
+    # document - dispatch/clearance certs, delivery notes) has nothing to
+    # sanity-check a short row against, so the fused-cell tolerance below
+    # (meant for OCR splitting one real column into two) is too permissive
+    # here: a stray 2-cell label/value line from elsewhere on the page
+    # ("Contact No" / a phone number) has just as many cells as a genuinely
+    # fused item row would. Real rows in this kind of wide table run to a
+    # dozen-plus columns, so require a row be reasonably close to that width
+    # instead of just >= the (very small) mapped-field count.
+    _has_price_col = "rate" in mapping or "amount" in mapping
+    _min_cells = 1 if _has_price_col else len(sorted_fields) + 2
 
     def row_to_dict(cells: list[str]) -> dict[str, str]:
         """Maps a data row's cells onto the header fields by position. OCR'd
@@ -1116,6 +1235,8 @@ def _rows_to_items(rows: list[list]) -> tuple[list[dict], list[str]]:
         cells = [str(c if c is not None else "").strip() for c in row]
         if not any(cells) or _is_skip_row(cells):
             continue
+        if len([c for c in cells if c]) < _min_cells:
+            continue
         d = row_to_dict(cells)
         desc = d.get("desc", "")
         if not desc:
@@ -1129,6 +1250,8 @@ def _rows_to_items(rows: list[list]) -> tuple[list[dict], list[str]]:
             qty_v = 1
         if rate_v is None:
             rate_v = (amt_v / qty_v) if (amt_v is not None and qty_v) else (amt_v or 0)
+        if not _has_price_col and rate_v == 0:
+            continue
         items.append({
             "desc": desc, "hsn": d.get("hsn", ""),
             "qty": _fmt_num(qty_v), "rate": _fmt_num(rate_v),
@@ -1181,11 +1304,12 @@ def _extract_docx_rows(data: bytes) -> list[list]:
                 rows.append(parts)
     return rows
 
-def _extract_pdf_rows(data: bytes) -> tuple[list[list], list[bytes], list[str]]:
-    """Returns (table_rows, page_images_needing_ocr, warnings). A PDF with a
-    real text layer is parsed directly (PyMuPDF's built-in table detection);
-    a PDF that's just a scan/photo with no text layer is rasterized to page
-    images instead, for the OCR path."""
+def _extract_pdf_rows(data: bytes) -> tuple[list[list], bool, list[str]]:
+    """Returns (table_rows, is_scanned, warnings). A PDF with a real text
+    layer is parsed directly (PyMuPDF's built-in table detection); a PDF
+    that's just a scan/photo with no text layer is flagged as scanned so the
+    caller can OCR it - OCR.space (whole PDF, one call) preferred, local
+    rasterize+OCR (see _rasterize_pdf_pages) as the fallback."""
     doc = fitz.open(stream=data, filetype="pdf")
     rows = []
     total_chars = 0
@@ -1201,14 +1325,20 @@ def _extract_pdf_rows(data: bytes) -> tuple[list[list], list[bytes], list[str]]:
             pass
     avg_chars = total_chars / max(len(doc), 1)
     if rows or avg_chars >= 15:
-        return rows, [], []
+        return rows, False, []
+    return [], True, []
 
+def _rasterize_pdf_pages(data: bytes) -> tuple[list[bytes], list[str]]:
+    """Local-OCR fallback for a scanned PDF when OCR.space isn't configured
+    or its call failed - rasterizes pages to PNG images, capped to bound
+    memory/time on this (512MB) server."""
+    doc = fitz.open(stream=data, filetype="pdf")
     warnings = []
     n_pages = min(len(doc), IMPORT_MAX_PDF_PAGES)
     if len(doc) > IMPORT_MAX_PDF_PAGES:
         warnings.append(f"PDF has {len(doc)} pages - only the first {IMPORT_MAX_PDF_PAGES} were scanned.")
     images = [doc[i].get_pixmap(dpi=200).tobytes("png") for i in range(n_pages)]
-    return [], images, warnings
+    return images, warnings
 
 def _ocr_image_to_rows(img_bytes: bytes) -> list[list]:
     # This server runs on a 512MB instance and OCR has been measured to come
@@ -1260,6 +1390,10 @@ _IMPORT_EXT_KIND = {
     ".docx": "docx", ".pdf": "pdf",
     ".png": "img", ".jpg": "img", ".jpeg": "img", ".webp": "img", ".bmp": "img",
 }
+_IMPORT_IMG_MIME = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".webp": "image/webp", ".bmp": "image/bmp",
+}
 
 @app.post("/admin/api/extract-invoice")
 def admin_api_extract_invoice():
@@ -1292,10 +1426,6 @@ def _admin_api_extract_invoice_impl():
             warnings.append(f"{name}: skipped - over {IMPORT_MAX_MB}MB.")
             continue
 
-        if kind in ("pdf", "img") and ocr_cap_hit:
-            warnings.append(f"{name}: skipped - reached the per-request limit of {IMPORT_MAX_OCR_OPS} scanned pages/images. Upload the rest in a separate request.")
-            continue
-
         try:
             rows: list[list] = []
             if kind == "xlsx":
@@ -1307,24 +1437,36 @@ def _admin_api_extract_invoice_impl():
             elif kind == "docx":
                 rows = _extract_docx_rows(data)
             elif kind == "pdf":
-                rows, images, pdf_warnings = _extract_pdf_rows(data)
+                rows, is_scanned, pdf_warnings = _extract_pdf_rows(data)
                 warnings.extend(f"{name}: {w}" for w in pdf_warnings)
-                if images:
-                    for img in images:
-                        if ocr_ops_used >= IMPORT_MAX_OCR_OPS:
-                            ocr_cap_hit = True
-                            warnings.append(f"{name}: stopped after {IMPORT_MAX_OCR_OPS} scanned pages to avoid overloading the server - upload the rest separately.")
-                            break
-                        rows.extend(_ocr_image_to_rows(img))
-                        ocr_ops_used += 1
+                if is_scanned:
+                    ocr_rows = _ocr_space_extract_rows(data, "application/pdf", is_pdf=True)
+                    if ocr_rows is not None:
+                        rows = ocr_rows
+                    elif ocr_cap_hit:
+                        warnings.append(f"{name}: skipped - reached the per-request limit of {IMPORT_MAX_OCR_OPS} scanned pages/images. Upload the rest in a separate request.")
+                        continue
+                    else:
+                        images, rast_warnings = _rasterize_pdf_pages(data)
+                        warnings.extend(f"{name}: {w}" for w in rast_warnings)
+                        for img in images:
+                            if ocr_ops_used >= IMPORT_MAX_OCR_OPS:
+                                ocr_cap_hit = True
+                                warnings.append(f"{name}: stopped after {IMPORT_MAX_OCR_OPS} scanned pages to avoid overloading the server - upload the rest separately.")
+                                break
+                            rows.extend(_ocr_image_to_rows(img))
+                            ocr_ops_used += 1
                     warnings.append(f"{name}: this looked like a scanned PDF - text was read with OCR, please double-check the numbers.")
             elif kind == "img":
-                if ocr_ops_used >= IMPORT_MAX_OCR_OPS:
-                    ocr_cap_hit = True
+                ocr_rows = _ocr_space_extract_rows(data, _IMPORT_IMG_MIME.get(ext, "image/jpeg"), is_pdf=False)
+                if ocr_rows is not None:
+                    rows = ocr_rows
+                elif ocr_cap_hit:
                     warnings.append(f"{name}: skipped - reached the per-request limit of {IMPORT_MAX_OCR_OPS} scanned pages/images. Upload the rest in a separate request.")
                     continue
-                rows = _ocr_image_to_rows(data)
-                ocr_ops_used += 1
+                else:
+                    rows = _ocr_image_to_rows(data)
+                    ocr_ops_used += 1
                 warnings.append(f"{name}: read with OCR - please double-check descriptions, HSN codes and numbers.")
         except Exception:
             app.logger.exception(f"extract-invoice failed on {name}")
